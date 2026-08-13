@@ -1,0 +1,391 @@
+.drawings-section {
+    --section-overlap: 0px;
+    --section-scroll-offset: 0px;
+    --drawings-content-offset: 24px;
+    --drawings-surface-color: #f5f5f2;
+    position: relative;
+    z-index: 5;
+    margin-top: 0;
+    padding: calc(28px + var(--drawings-content-offset)) var(--project-shell-padding) 40px;
+    min-height: calc(100vh + 72px);
+    background: var(--drawings-surface-color);
+    transform: translate3d(0, calc((1 - var(--section-separate, 0)) * var(--section-overlap) * -1), 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    contain: paint;
+}
+
+.drawings-shell {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(280px, 0.68fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: start;
+    width: min(1320px, calc(100% - (var(--project-edge-inset) * 2)));
+    margin: 0 auto;
+    min-height: min(100vh, 980px);
+}
+
+.drawings-hero {
+    grid-column: 2;
+    position: sticky;
+    top: 148px;
+    z-index: 2;
+    width: 100%;
+    margin: 0;
+    padding-top: 0;
+    text-align: right;
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.32s ease;
+    pointer-events: none;
+}
+
+.drawings-section.is-active .drawings-hero {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.drawings-title {
+    font-family: "Roboto Flex", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    max-width: none;
+    margin-bottom: 0;
+    color: #11100f;
+    font-size: clamp(2.9rem, 5.8vw, 5.45rem);
+    line-height: 0.92;
+    font-weight: 400;
+    letter-spacing: -0.065em;
+    text-transform: uppercase;
+    transition: opacity 0.28s ease;
+}
+
+.drawings-title-line,
+.drawings-title-subline {
+    display: inline-block;
+}
+
+.drawings-title-char {
+    display: inline-block;
+    white-space: pre;
+    /* driven per character by components/drawings-title.js */
+    font-variation-settings: "wght" var(--char-wght, 400), "wdth" var(--char-wdth, 100);
+    /* the float-in is a transition, not an animation, so the pressure effect can
+       take over the same characters the moment it finishes */
+    opacity: 0;
+    transform: translateY(0.42em);
+    transition:
+        opacity 0.72s cubic-bezier(0.22, 0.85, 0.24, 1),
+        transform 0.86s cubic-bezier(0.22, 0.85, 0.24, 1),
+        font-variation-settings 0.28s ease-out;
+    transition-delay: calc(var(--char-index, 0) * var(--char-stagger, 42ms));
+    will-change: transform, opacity, font-variation-settings;
+}
+
+.drawings-title.is-revealed .drawings-title-char {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.drawings-title-subline {
+    margin-top: 0.22em;
+    font-size: 0.5em;
+    line-height: 1;
+    font-weight: 300;
+    letter-spacing: -0.035em;
+    text-transform: lowercase;
+}
+
+
+
+.drawings-carousel {
+    grid-column: 1;
+    position: relative;
+    width: 100%;
+    margin: -28px 0 0;
+}
+
+.drawings-viewport {
+    position: relative;
+    overflow: visible;
+}
+
+.drawings-track {
+    display: block;
+    padding: 0 0 48vh;
+}
+
+.drawings-card {
+    position: sticky;
+    top: calc(148px + (var(--drawings-card-index, 0) * 14px));
+    width: min(720px, calc(100% - 64px));
+    margin-inline: auto;
+    margin-bottom: 24vh;
+    z-index: calc(20 + var(--drawings-card-index, 0));
+    background: transparent;
+    cursor: pointer;
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.92));
+    transform-origin: center top;
+    will-change: transform;
+    transition: transform 0.16s linear;
+}
+
+.drawings-card + .drawings-card {
+    margin-top: -13vh;
+}
+
+.drawings-card::before {
+    display: none;
+}
+
+.drawings-media-wrap {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    border-radius: 28px;
+    margin-bottom: 0;
+    background: #ffffff;
+    border: 1px solid rgba(20, 17, 15, 0.05);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 2px 5px rgba(18, 15, 12, 0.018),
+        0 10px 22px rgba(18, 15, 12, 0.032),
+        0 24px 44px rgba(18, 15, 12, 0.028);
+}
+
+.drawings-index {
+    position: absolute;
+    top: 18px;
+    right: 16px;
+    color: #4a4641;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.drawings-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    object-position: center;
+    background: #ffffff;
+    transform: scale(1.03);
+    transform-origin: center center;
+    transition: transform 0.7s ease, filter 0.7s ease;
+}
+
+.drawings-caption {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(242, 242, 238, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0.96;
+    transform: translateY(0);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.drawings-caption h3 {
+    margin-bottom: 3px;
+    color: #11100f;
+    font-size: 1.05rem;
+    font-weight: 400;
+}
+
+.drawings-caption p {
+    color: #5f5953;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.drawings-card:hover .drawings-image,
+.drawings-card:focus-within .drawings-image {
+    transform: scale(1.05);
+    filter: saturate(1.02);
+}
+
+.drawings-card:hover .drawings-caption,
+.drawings-card:focus-within .drawings-caption {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.drawings-arrow {
+    display: none;
+}
+
+.drawings-arrow-glyph {
+    display: inline-block;
+    font-family: "Helvetica Neue", "SF Pro Display", Arial, sans-serif;
+    font-size: 1.15rem;
+    font-weight: 300;
+    line-height: 1;
+    transform: scaleX(0.82);
+}
+
+.drawings-arrow:hover,
+.drawings-arrow:focus-visible {
+    outline: none;
+}
+
+.drawings-arrow-left:hover .drawings-arrow-glyph,
+.drawings-arrow-left:focus-visible .drawings-arrow-glyph {
+    animation: none;
+}
+
+.drawings-arrow-right:hover .drawings-arrow-glyph,
+.drawings-arrow-right:focus-visible .drawings-arrow-glyph {
+    animation: none;
+}
+
+.drawings-arrow-left {
+    left: -58px;
+}
+
+.drawings-arrow-right {
+    right: -58px;
+}
+
+@keyframes drawings-arrow-scroll-left {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateX(16px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes drawings-arrow-scroll-right {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateX(16px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 1080px) {
+    .drawings-card {
+        flex-basis: calc((100% - 24px) / 2);
+    }
+}
+
+@media (max-width: 768px) {
+    .drawings-section {
+        --drawings-content-offset: 18px;
+        padding-bottom: 28px;
+        min-height: calc(100vh + 48px);
+    }
+
+    .drawings-hero,
+    .drawings-carousel {
+        width: 100%;
+    }
+
+    .drawings-shell {
+        display: block;
+        width: 100%;
+        margin: 0;
+    }
+
+    .drawings-hero {
+        position: static;
+        padding-top: 0;
+        margin: 0 0 32px;
+        text-align: left;
+    }
+
+    .drawings-title {
+        font-size: 2.15rem;
+    }
+
+    .drawings-track {
+        display: grid;
+        gap: 18px;
+        padding-bottom: 0;
+    }
+
+    .drawings-card {
+        position: relative;
+        top: auto;
+        width: calc(100% - 12px);
+        margin: 0;
+        transform: none;
+    }
+
+    .drawings-card + .drawings-card {
+        margin-top: 0;
+    }
+
+    .drawings-card::before {
+        display: none;
+    }
+
+    .drawings-media-wrap {
+        padding: 12px;
+        border-radius: 22px;
+    }
+
+    .drawings-caption {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+    }
+
+    .drawings-track:hover .drawings-card,
+    .drawings-track:focus-within .drawings-card,
+    .drawings-card:hover,
+    .drawings-card:focus-within {
+        width: calc(100% - 12px);
+        transform: none;
+    }
+
+    .drawings-card:hover .drawings-image,
+    .drawings-card:focus-within .drawings-image {
+        transform: scale(1.03);
+        filter: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .drawings-title-char {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

@@ -1,17 +1,32 @@
 #!/usr/bin/env node
 
+// Project images are shrunk to a sensible pixel size FIRST, then compressed to a
+// byte budget. Doing it the other way round (quality-only, keep dimensions) is
+// how the gallery ended up holding 9449px-wide files squeezed under 1MB: heavy
+// artefacts AND a decode cost large enough to stall the browser after the bytes
+// have already arrived.
+//
+// The overlay renders detail images around 900px CSS wide and gallery stage
+// images near full-viewport, so these caps are already generous at 2x DPR.
+
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
 const root = path.resolve(__dirname, "..");
 const projectsRoot = path.join(root, "assets", "images", "projects");
-const targetBytes = 1000000;
 const workDir = path.join(root, ".image-compress-tmp");
-const jpegQualities = [88, 84, 80, 76, 72, 68];
-const maxDimensions = [null, 4200, 3600, 3200, 2800, 2400, 2200, 2000, 1800, 1600];
+
+const maxDimensionFor = { detail: 1800, gallery: 2400, card: 1600 };
+const targetBytes = 420000;
+const jpegQualities = [86, 82, 78, 74, 70, 66];
+const isDryRun = process.argv.includes("--dry-run");
 
 function walk(dir, files) {
+    if (!fs.existsSync(dir)) {
+        return files;
+    }
+
     fs.readdirSync(dir, { withFileTypes: true }).forEach(function (entry) {
         const fullPath = path.join(dir, entry.name);
 
@@ -22,159 +37,159 @@ function walk(dir, files) {
 
         files.push(fullPath);
     });
+
+    return files;
 }
 
-function isTargetImage(filePath) {
+function kindOf(filePath) {
     const relativePath = path.relative(projectsRoot, filePath);
-    return /^project[1-9]\//.test(relativePath) &&
-        /\/(?:detail|gallery)\//.test(relativePath) &&
-        /\.(jpe?g|png)$/i.test(filePath);
+
+    if (!/^project[1-9]\d*\//.test(relativePath) || !/\.(jpe?g|png)$/i.test(filePath)) {
+        return null;
+    }
+
+    const match = relativePath.match(/\/(detail|gallery|card)\//);
+    return match ? match[1] : null;
 }
 
-function getExt(filePath) {
-    return path.extname(filePath).toLowerCase();
-}
-
-function getCandidatePath(filePath, label) {
-    const relativePath = path.relative(root, filePath);
-    return path.join(workDir, relativePath + "." + label + path.extname(filePath));
+function readDimensions(filePath) {
+    const output = execFileSync("sips", ["-g", "pixelWidth", "-g", "pixelHeight", filePath], { encoding: "utf8" });
+    const width = Number((output.match(/pixelWidth:\s*(\d+)/) || [])[1]);
+    const height = Number((output.match(/pixelHeight:\s*(\d+)/) || [])[1]);
+    return { width, height };
 }
 
 function runSips(args) {
     execFileSync("sips", args, { stdio: "ignore" });
 }
 
-function makeCandidate(filePath, candidatePath, options) {
-    fs.mkdirSync(path.dirname(candidatePath), { recursive: true });
-
-    const args = [];
-
-    if (options.maxDimension) {
-        args.push("-Z", String(options.maxDimension));
-    }
-
-    if (options.format) {
-        args.push("-s", "format", options.format);
-    }
-
-    if (options.quality) {
-        args.push("-s", "formatOptions", String(options.quality));
-    }
-
-    args.push(filePath, "--out", candidatePath);
-    runSips(args);
+function candidatePath(filePath, label) {
+    const target = path.join(workDir, path.relative(root, filePath) + "." + label + path.extname(filePath));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    return target;
 }
 
-function compressImage(filePath) {
+// Produce the smallest file that stays within the pixel cap; only drop quality
+// once the dimensions are already correct.
+function processImage(filePath, kind) {
     const originalBytes = fs.statSync(filePath).size;
-    const ext = getExt(filePath);
-    const format = ext === ".png" ? "png" : "jpeg";
-    let bestPath = null;
-    let bestBytes = Infinity;
-    let bestLabel = "";
+    const { width, height } = readDimensions(filePath);
+    const cap = maxDimensionFor[kind];
+    const longestSide = Math.max(width, height);
+    const needsResize = longestSide > cap;
+    const needsCompress = originalBytes > targetBytes;
 
-    function keepCandidate(candidatePath, candidateBytes, label) {
-        if (candidateBytes < bestBytes) {
-            if (bestPath && bestPath !== candidatePath && fs.existsSync(bestPath)) {
-                fs.rmSync(bestPath, { force: true });
-            }
-
-            bestPath = candidatePath;
-            bestBytes = candidateBytes;
-            bestLabel = label;
-            return;
-        }
-
-        fs.rmSync(candidatePath, { force: true });
-    }
-
-    if (originalBytes <= targetBytes) {
+    if (!needsResize && !needsCompress) {
         return null;
     }
 
-    if (format === "jpeg") {
-        for (const maxDimension of maxDimensions) {
-            for (const quality of jpegQualities) {
-                const label = (maxDimension || "same") + "-q" + quality;
-                const candidatePath = getCandidatePath(filePath, label);
-                makeCandidate(filePath, candidatePath, { format: "jpeg", quality, maxDimension });
-                const candidateBytes = fs.statSync(candidatePath).size;
+    const isPng = path.extname(filePath).toLowerCase() === ".png";
+    const qualities = isPng ? [null] : jpegQualities;
+    let best = null;
 
-                if (candidateBytes <= targetBytes) {
-                    fs.copyFileSync(candidatePath, filePath);
-                    fs.rmSync(candidatePath, { force: true });
-                    if (bestPath && bestPath !== candidatePath && fs.existsSync(bestPath)) {
-                        fs.rmSync(bestPath, { force: true });
-                    }
-                    return { originalBytes, finalBytes: candidateBytes, label };
-                }
+    for (const quality of qualities) {
+        const label = (needsResize ? cap : "same") + "-q" + (quality || "png");
+        const target = candidatePath(filePath, label);
+        const args = [];
 
-                keepCandidate(candidatePath, candidateBytes, label);
-            }
+        if (needsResize) {
+            args.push("-Z", String(cap));
         }
-    } else {
-        for (const maxDimension of maxDimensions.filter(Boolean)) {
-            const label = String(maxDimension);
-            const candidatePath = getCandidatePath(filePath, label);
-            makeCandidate(filePath, candidatePath, { format: "png", maxDimension });
-            const candidateBytes = fs.statSync(candidatePath).size;
 
-            if (candidateBytes <= targetBytes) {
-                fs.copyFileSync(candidatePath, filePath);
-                fs.rmSync(candidatePath, { force: true });
-                if (bestPath && bestPath !== candidatePath && fs.existsSync(bestPath)) {
-                    fs.rmSync(bestPath, { force: true });
-                }
-                return { originalBytes, finalBytes: candidateBytes, label };
+        args.push("-s", "format", isPng ? "png" : "jpeg");
+
+        if (quality) {
+            args.push("-s", "formatOptions", String(quality));
+        }
+
+        args.push(filePath, "--out", target);
+        runSips(args);
+
+        const bytes = fs.statSync(target).size;
+
+        if (!best || bytes < best.bytes) {
+            if (best) {
+                fs.rmSync(best.path, { force: true });
             }
 
-            keepCandidate(candidatePath, candidateBytes, label);
+            best = { path: target, bytes, label };
+        } else {
+            fs.rmSync(target, { force: true });
+        }
+
+        if (bytes <= targetBytes) {
+            break;
         }
     }
 
-    if (bestPath && bestBytes < originalBytes) {
-        fs.copyFileSync(bestPath, filePath);
-        fs.rmSync(bestPath, { force: true });
-        return { originalBytes, finalBytes: bestBytes, label: bestLabel + " (best effort)" };
+    if (!best) {
+        return null;
     }
 
-    return { originalBytes, finalBytes: originalBytes, label: "unchanged" };
+    // Never let "optimising" make a file bigger than it started.
+    if (best.bytes >= originalBytes && !needsResize) {
+        fs.rmSync(best.path, { force: true });
+        return null;
+    }
+
+    if (!isDryRun) {
+        fs.copyFileSync(best.path, filePath);
+    }
+
+    fs.rmSync(best.path, { force: true });
+
+    return {
+        originalBytes,
+        finalBytes: best.bytes,
+        from: width + "x" + height,
+        to: needsResize ? "≤" + cap : "unchanged",
+        label: best.label
+    };
 }
 
 if (fs.existsSync(workDir)) {
     fs.rmSync(workDir, { recursive: true, force: true });
 }
 
-const allFiles = [];
-walk(projectsRoot, allFiles);
-
-const oversizedImages = allFiles
-    .filter(isTargetImage)
-    .filter(function (filePath) {
-        return fs.statSync(filePath).size > targetBytes;
+const targets = walk(projectsRoot, [])
+    .map(function (filePath) {
+        return { filePath, kind: kindOf(filePath) };
+    })
+    .filter(function (entry) {
+        return entry.kind;
     });
 
-const results = oversizedImages.map(function (filePath) {
-    const result = compressImage(filePath);
-    return Object.assign({ filePath }, result);
+console.log("Scanning " + targets.length + " project images" + (isDryRun ? " (dry run)" : "") + "\n");
+
+let changed = 0;
+let bytesBefore = 0;
+let bytesAfter = 0;
+
+targets.forEach(function (entry, index) {
+    const result = processImage(entry.filePath, entry.kind);
+    const relativePath = path.relative(root, entry.filePath);
+
+    if (!result) {
+        const bytes = fs.statSync(entry.filePath).size;
+        bytesBefore += bytes;
+        bytesAfter += bytes;
+        return;
+    }
+
+    changed += 1;
+    bytesBefore += result.originalBytes;
+    bytesAfter += result.finalBytes;
+
+    console.log(
+        String(index + 1).padStart(3) + "/" + targets.length + "  " +
+        relativePath.replace("assets/images/projects/", "") + "  " +
+        result.from + " -> " + result.to + "  " +
+        (result.originalBytes / 1000000).toFixed(2) + "MB -> " + (result.finalBytes / 1000000).toFixed(2) + "MB"
+    );
 });
 
 fs.rmSync(workDir, { recursive: true, force: true });
 
-const stillOversized = results.filter(function (result) {
-    return result.finalBytes > targetBytes;
-});
-
-results.forEach(function (result) {
-    const relativePath = path.relative(root, result.filePath);
-    const before = (result.originalBytes / 1000000).toFixed(2) + "MB";
-    const after = (result.finalBytes / 1000000).toFixed(2) + "MB";
-    console.log(relativePath + "  " + before + " -> " + after + "  [" + result.label + "]");
-});
-
-console.log("Processed: " + results.length);
-console.log("Still over 1MB: " + stillOversized.length);
-
-if (stillOversized.length) {
-    process.exitCode = 1;
-}
+console.log("\nRewritten: " + changed + " of " + targets.length);
+console.log("Total: " + (bytesBefore / 1000000).toFixed(1) + "MB -> " + (bytesAfter / 1000000).toFixed(1) + "MB" +
+    "  (" + Math.round((1 - bytesAfter / bytesBefore) * 100) + "% smaller)");

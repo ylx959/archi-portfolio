@@ -770,3 +770,69 @@ body.is-project-detail-open .project-showcase {
         font-size: 2.25rem;
     }
 }
+
+@keyframes close-glyph-scroll {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateY(-16px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateY(16px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes badge-scroll {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes readmore-scroll {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

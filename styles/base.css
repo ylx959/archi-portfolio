@@ -1,0 +1,78 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --project-shell-padding: 28px;
+    --project-card-scale: 0.985;
+    --project-column-count: 3;
+    --project-edge-inset: calc((100% / var(--project-column-count)) * ((1 - var(--project-card-scale)) / 2));
+    --stack-section-overlap: 34vh;
+    --contact-section-overlap: 18vh;
+    --filter-panel-open-duration: 0.42s;
+    --filter-panel-close-duration: 0.3s;
+    --filter-option-pop-duration: 0.74s;
+    --filter-option-fade-duration: 0.42s;
+    --filter-option-open-stagger: 0.09s;
+    --filter-option-close-stagger: 0.07s;
+}
+
+html {
+    scroll-behavior: auto;
+    scrollbar-gutter: stable;
+}
+
+html.is-locked,
+body.is-locked {
+    overflow: hidden;
+    height: 100%;
+}
+
+body.is-locked .project-showcase,
+body.is-locked .drawings-section,
+body.is-locked .about-section,
+body.is-locked .contact-section,
+body.is-locked .anchor-placeholder {
+    opacity: 0.18;
+    filter: blur(3px);
+    pointer-events: none;
+    user-select: none;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    background: #ffffff;
+    color: #171514;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button,
+a {
+    touch-action: manipulation;
+}
+
+@media (max-width: 1080px) {
+    :root {
+        --project-column-count: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --project-shell-padding: 16px;
+        --project-column-count: 1;
+        --stack-section-overlap: 18vh;
+        --contact-section-overlap: 10vh;
+    }
+}
