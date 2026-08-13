@@ -1,8 +1,8 @@
-import { projectImageBatchSize } from "../core/constants.js?v=7";
-import { body } from "../core/dom.js?v=7";
-import { projectDetails } from "../core/project-data.js?v=7";
-import { cancelInertiaScroll, syncInertiaScrollPosition } from "../core/scroll.js?v=7";
-import { escapeAttribute, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js?v=7";
+import { projectImageBatchSize } from "../core/constants.js?v=9";
+import { body } from "../core/dom.js?v=9";
+import { projectDetails } from "../core/project-data.js?v=9";
+import { cancelInertiaScroll, syncInertiaScrollPosition } from "../core/scroll.js?v=9";
+import { escapeAttribute, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js?v=9";
 
 const projectDetailOverlay = document.getElementById("projectDetailOverlay");
 

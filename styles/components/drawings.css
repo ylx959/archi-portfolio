@@ -67,23 +67,27 @@
 .drawings-title-char {
     display: inline-block;
     white-space: pre;
-    /* driven per character by components/drawings-title.js */
-    font-variation-settings: "wght" var(--char-wght, 400), "wdth" var(--char-wdth, 100);
-    /* the float-in is a transition, not an animation, so the pressure effect can
-       take over the same characters the moment it finishes */
+    /* axis values are eased in JS, so there is deliberately no transition on
+       font-variation-settings here: a transition would restart every frame and
+       re-rasterise the glyphs at display size over and over */
+    font-variation-settings: "wght" var(--char-wght, 200), "wdth" var(--char-wdth, 60);
     opacity: 0;
-    transform: translateY(0.42em);
+    transform: translateY(0.5em);
     transition:
-        opacity 0.72s cubic-bezier(0.22, 0.85, 0.24, 1),
-        transform 0.86s cubic-bezier(0.22, 0.85, 0.24, 1),
-        font-variation-settings 0.28s ease-out;
-    transition-delay: calc(var(--char-index, 0) * var(--char-stagger, 42ms));
-    will-change: transform, opacity, font-variation-settings;
+        opacity 0.62s cubic-bezier(0.22, 0.85, 0.24, 1),
+        transform 0.78s cubic-bezier(0.22, 0.85, 0.24, 1);
+    /* leaving: quick, reversed, so the heading clears out from the tail first */
+    transition-delay: calc((var(--char-total, 20) - var(--char-index, 0)) * var(--char-stagger, 42ms) * 0.35);
+    will-change: transform, opacity;
 }
 
-.drawings-title.is-revealed .drawings-title-char {
+/* The heading only becomes visible when the section does, so the entrance has to
+   be driven by the same class — an IntersectionObserver on the sticky heading
+   fires while it is still fully transparent, and the reveal plays unseen. */
+.drawings-section.is-active .drawings-title-char {
     opacity: 1;
     transform: translateY(0);
+    transition-delay: calc(var(--char-index, 0) * var(--char-stagger, 42ms));
 }
 
 .drawings-title-subline {

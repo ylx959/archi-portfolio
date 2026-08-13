@@ -1,7 +1,7 @@
-import { inertiaScrollSettings, nonDesktopScrollQuery, reducedMotionQuery, scrollDuration } from "./constants.js?v=7";
-import { body } from "./dom.js?v=7";
-import { isEntered } from "./state.js?v=7";
-import { easeInOutCubic } from "./utils.js?v=7";
+import { inertiaScrollSettings, nonDesktopScrollQuery, reducedMotionQuery, scrollDuration } from "./constants.js?v=9";
+import { body } from "./dom.js?v=9";
+import { isEntered } from "./state.js?v=9";
+import { easeInOutCubic } from "./utils.js?v=9";
 
 // The hero owns the rules for when the page may scroll at all: while its intro
 // story is being scrubbed the wheel drives the story instead of the document.

@@ -1,26 +1,41 @@
-import { reducedMotionQuery } from "../core/constants.js?v=7";
+import { reducedMotionQuery } from "../core/constants.js?v=9";
 
 // "THE MOMENTS / that moved me" — the heading is split into per-character spans
-// so it can do two things: float in as the section is scrolled into view, and
-// respond to the pointer by pushing each character's variable-font axes.
+// so it can do two things: float in and out with the section (that part is pure
+// CSS, keyed off .drawings-section.is-active), and respond to pointer distance
+// by pushing each character's variable-font axes.
+//
 // Roboto Flex is used here specifically because it carries a width axis; the
 // effect is mostly carried by wdth, not weight.
 
 const drawingsTitle = document.querySelector(".drawings-title");
+const drawingsSection = document.getElementById("drawings");
 
 const pressure = {
     // how far from a character the pointer still has an effect, in px
-    radius: 240,
+    radius: 260,
     weight: { min: 200, max: 900 },
     width: { min: 60, max: 145 },
     // eased falloff makes the near field feel firm and the far field soft
-    falloff: 1.7
+    falloff: 1.7,
+    // easing is done here rather than as a CSS transition, see below
+    lerp: 0.22
 };
 
-const floatRevealStagger = 42;
+// Changing the width axis changes glyph advances, so every distinct value costs
+// a relayout of the heading. Quantising means a slow drift writes a handful of
+// times instead of once per frame, with no visible stepping at display size.
+const weightStep = 20;
+const widthStep = 4;
+const restEpsilon = 0.6;
+
+// Gap between one character starting to rise and the next. The heading is 23
+// characters, so this multiplies up: the tail starts at 22 x this value.
+const floatRevealStagger = 75;
 
 let charElements = [];
 let charCenters = [];
+let charState = [];
 let pointerX = -9999;
 let pointerY = -9999;
 let hasPointer = false;
@@ -75,10 +90,20 @@ function buildTitleMarkup() {
         '<span class="drawings-title-subline" aria-hidden="true">' + sublineMarkup + "</span>";
 
     charElements = Array.from(drawingsTitle.querySelectorAll(".drawings-title-char"));
+    charState = charElements.map(function () {
+        return {
+            weight: pressure.weight.min,
+            width: pressure.width.min,
+            writtenWeight: -1,
+            writtenWidth: -1
+        };
+    });
+
     drawingsTitle.style.setProperty("--char-total", String(charElements.length));
+    drawingsTitle.style.setProperty("--char-stagger", floatRevealStagger + "ms");
 }
 
-// Character boxes are measured in one pass and cached. Doing this per pointermove
+// Character boxes are measured in one pass and cached. Measuring per pointermove
 // is what makes this kind of effect stutter — every read would force the browser
 // to redo layout it has already done.
 function measureChars() {
@@ -93,12 +118,11 @@ function measureChars() {
 }
 
 function queueMeasure() {
-    if (measureQueued) {
-        return;
-    }
-
     measureQueued = true;
-    window.requestAnimationFrame(measureChars);
+}
+
+function isTitleVisible() {
+    return !!(drawingsSection && drawingsSection.classList.contains("is-active"));
 }
 
 function applyPressure() {
@@ -114,17 +138,51 @@ function applyPressure() {
         return;
     }
 
-    for (let index = 0; index < charElements.length; index += 1) {
-        const center = charCenters[index];
-        const distance = Math.hypot(pointerX - center.x, pointerY - center.y);
-        const nearness = hasPointer
-            ? Math.pow(Math.max(0, 1 - (distance / pressure.radius)), pressure.falloff)
-            : 0;
-        const weight = Math.round(pressure.weight.min + ((pressure.weight.max - pressure.weight.min) * nearness));
-        const width = Math.round(pressure.width.min + ((pressure.width.max - pressure.width.min) * nearness));
+    // No point paying for glyph work while the heading is faded out.
+    const isEngaged = hasPointer && isTitleVisible();
+    let isSettled = true;
 
-        charElements[index].style.setProperty("--char-wght", String(weight));
-        charElements[index].style.setProperty("--char-wdth", String(width));
+    for (let index = 0; index < charElements.length; index += 1) {
+        const state = charState[index];
+        const center = charCenters[index];
+        const distance = isEngaged
+            ? Math.hypot(pointerX - center.x, pointerY - center.y)
+            : Infinity;
+        const nearness = distance < pressure.radius
+            ? Math.pow(1 - (distance / pressure.radius), pressure.falloff)
+            : 0;
+        const targetWeight = pressure.weight.min + ((pressure.weight.max - pressure.weight.min) * nearness);
+        const targetWidth = pressure.width.min + ((pressure.width.max - pressure.width.min) * nearness);
+
+        state.weight += (targetWeight - state.weight) * pressure.lerp;
+        state.width += (targetWidth - state.width) * pressure.lerp;
+
+        if (Math.abs(targetWeight - state.weight) > restEpsilon || Math.abs(targetWidth - state.width) > restEpsilon) {
+            isSettled = false;
+        } else {
+            state.weight = targetWeight;
+            state.width = targetWidth;
+        }
+
+        const nextWeight = Math.round(state.weight / weightStep) * weightStep;
+        const nextWidth = Math.round(state.width / widthStep) * widthStep;
+
+        // Skipping unchanged writes keeps a slow pointer from relaying out the
+        // whole heading on every single frame.
+        if (nextWeight !== state.writtenWeight) {
+            state.writtenWeight = nextWeight;
+            charElements[index].style.setProperty("--char-wght", String(nextWeight));
+        }
+
+        if (nextWidth !== state.writtenWidth) {
+            state.writtenWidth = nextWidth;
+            charElements[index].style.setProperty("--char-wdth", String(nextWidth));
+        }
+    }
+
+    // Keep the loop alive only while something is still moving.
+    if (!isSettled) {
+        renderFrame = window.requestAnimationFrame(applyPressure);
     }
 }
 
@@ -152,26 +210,12 @@ function releasePressure() {
     requestPressureRender();
 }
 
-function observeReveal() {
-    if (typeof IntersectionObserver !== "function") {
-        drawingsTitle.classList.add("is-revealed");
-        return;
+function handleScroll() {
+    queueMeasure();
+
+    if (hasPointer) {
+        requestPressureRender();
     }
-
-    const observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-            if (!entry.isIntersecting) {
-                return;
-            }
-
-            drawingsTitle.classList.add("is-revealed");
-            observer.disconnect();
-            // character boxes only settle once the float-in has finished
-            window.setTimeout(queueMeasure, (charElements.length * floatRevealStagger) + 900);
-        });
-    }, { threshold: 0.25 });
-
-    observer.observe(drawingsTitle);
 }
 
 export function initDrawingsTitle() {
@@ -180,18 +224,17 @@ export function initDrawingsTitle() {
     }
 
     buildTitleMarkup();
-    drawingsTitle.style.setProperty("--char-stagger", floatRevealStagger + "ms");
-    observeReveal();
     queueMeasure();
 
+    // The float in/out is handled entirely by CSS off .drawings-section.is-active,
+    // so nothing here needs to drive it.
     if (reducedMotionQuery.matches) {
-        drawingsTitle.classList.add("is-revealed");
         return;
     }
 
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerleave", releasePressure, { passive: true });
     window.addEventListener("blur", releasePressure);
-    window.addEventListener("scroll", queueMeasure, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", queueMeasure);
 }

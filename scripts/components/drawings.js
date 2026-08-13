@@ -1,4 +1,4 @@
-import { openDrawingsDetail } from "./drawings-detail.js?v=7";
+import { openDrawingsDetail } from "./drawings-detail.js?v=9";
 
 export const drawingsTrack = document.getElementById("drawingsTrack");
 

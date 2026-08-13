@@ -1,4 +1,4 @@
-import { heroScrambleCharacters } from "./constants.js?v=7";
+import { heroScrambleCharacters } from "./constants.js?v=9";
 
 export function escapeAttribute(value) {
     return String(value || "")

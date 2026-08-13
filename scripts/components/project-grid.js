@@ -1,6 +1,6 @@
-import { openProjectDetail } from "./project-detail.js?v=7";
-import { projectDetails } from "../core/project-data.js?v=7";
-import { formatCategory } from "../core/utils.js?v=7";
+import { openProjectDetail } from "./project-detail.js?v=9";
+import { projectDetails } from "../core/project-data.js?v=9";
+import { formatCategory } from "../core/utils.js?v=9";
 
 const viewToggle = document.getElementById("viewToggle");
 
