@@ -1,9 +1,9 @@
-import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=67";
-import { body, html } from "../core/dom.js?v=67";
-import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=67";
-import { getCurrentSection } from "../core/sections.js?v=67";
-import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=67";
-import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=67";
+import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=70";
+import { body, html } from "../core/dom.js?v=70";
+import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=70";
+import { getCurrentSection } from "../core/sections.js?v=70";
+import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=70";
+import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=70";
 
 export const enterForm = document.getElementById("enterForm");
 

@@ -791,6 +791,25 @@
         transition: opacity 1.8s cubic-bezier(0.33, 0, 0.15, 1);
     }
 
+    /* The headline's opacity is read off --hero-expand-progress by the same kind
+       of formula as the scrim, so on a wheel it thins out over the last third of
+       the scrub. Touch jumps that variable to 1 in one frame and the words are
+       simply gone between two frames. Here it disperses instead: it drifts wider
+       than the frame while it goes, so it reads as thinning into the air rather
+       than as a light being switched off. */
+    .hero-expand-title {
+        will-change: opacity, filter, transform;
+        transition:
+            opacity 1.5s cubic-bezier(0.33, 0, 0.15, 1),
+            filter 1.5s cubic-bezier(0.33, 0, 0.15, 1),
+            transform 1.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero.is-expanded .hero-expand-title {
+        filter: blur(6px);
+        transform: translateY(-50%) scale(1.06);
+    }
+
     .hero-expand-hint {
         display: none;
     }

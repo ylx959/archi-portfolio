@@ -789,7 +789,9 @@
     }
 
     .project-grid {
-        gap: 6px;
+        /* No gap override: at one column the gutter token (14px here) is the
+           only spacing left, and the 6px that used to sit here was quietly
+           contradicting it. */
         grid-template-columns: 1fr;
     }
 

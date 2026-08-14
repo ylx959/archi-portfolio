@@ -119,6 +119,11 @@
 
 .drawings-track {
     display: block;
+    /* Where each card parks, and how far the one after it parks below — read by
+       drawings.js too, so the resting position is stated once rather than being
+       kept in step by hand on both sides. */
+    --drawings-stack-top: 148px;
+    --drawings-stack-step: 14px;
     /* The top padding is the lead-in: the sticky heading reaches its resting
        position and finishes floating in before the first card enters. */
     padding: 52vh 0 56vh;
@@ -126,7 +131,7 @@
 
 .drawings-card {
     position: sticky;
-    top: calc(148px + (var(--drawings-card-index, 0) * 14px));
+    top: calc(var(--drawings-stack-top) + (var(--drawings-card-index, 0) * var(--drawings-stack-step)));
     width: min(560px, calc(100% - 160px));
     margin-inline: auto;
     margin-bottom: 30vh;
@@ -158,12 +163,19 @@
     margin-bottom: 0;
     background: #ffffff;
     border: 1px solid rgba(20, 17, 15, 0.05);
+    /* The cast layers are scaled by --drawings-card-shadow, which drawings.js
+       drops toward zero as the card behind gets covered. They spread 22px and
+       44px, far wider than the 9-14px the stack steps by, so at full strength
+       every parked card lays its whole shadow on the one below and four of them
+       read as a grey band rather than as four cards. The inset highlight and the
+       hairline are not scaled — those are the card's own edge, not depth it
+       casts onto anything. */
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.9) inset,
         0 0 0 1px rgba(255, 255, 255, 0.28),
-        0 2px 5px rgba(18, 15, 12, 0.018),
-        0 10px 22px rgba(18, 15, 12, 0.032),
-        0 24px 44px rgba(18, 15, 12, 0.028);
+        0 2px 5px rgba(18, 15, 12, calc(0.018 * var(--drawings-card-shadow, 1))),
+        0 10px 22px rgba(18, 15, 12, calc(0.032 * var(--drawings-card-shadow, 1))),
+        0 24px 44px rgba(18, 15, 12, calc(0.028 * var(--drawings-card-shadow, 1)));
 }
 
 .drawings-index {
@@ -344,22 +356,25 @@
         font-size: 2.15rem;
     }
 
+    /* The cards stack here as well, just tighter: a phone parks them higher up
+       (there is no sticky heading beside them to clear) and steps them by less,
+       because ten cards at the desktop step would walk off the bottom of a short
+       screen. The lead-in and the gaps are scaled down to match. */
     .drawings-track {
-        display: grid;
-        gap: 18px;
-        padding: 0;
+        display: block;
+        --drawings-stack-top: 88px;
+        --drawings-stack-step: 9px;
+        padding: 22vh 0 26vh;
     }
 
     .drawings-card {
-        position: relative;
-        top: auto;
         width: calc(100% - 12px);
-        margin: 0;
-        transform: none;
+        margin-inline: auto;
+        margin-bottom: 20vh;
     }
 
     .drawings-card + .drawings-card {
-        margin-top: 0;
+        margin-top: -9vh;
     }
 
     .drawings-card::before {
@@ -377,12 +392,15 @@
         bottom: 14px;
     }
 
+    /* Neutralises the desktop hover spread, but must not flatten the transform:
+       that is where the stack's scale lives, and a tap leaves :hover stuck on a
+       touch screen — the card under the finger would drop out of the stack. */
     .drawings-track:hover .drawings-card,
     .drawings-track:focus-within .drawings-card,
     .drawings-card:hover,
     .drawings-card:focus-within {
         width: calc(100% - 12px);
-        transform: none;
+        transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.94));
     }
 
     .drawings-card:hover .drawings-image,

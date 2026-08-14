@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "../core/constants.js?v=67";
+import { reducedMotionQuery } from "../core/constants.js?v=70";
 
 export const contactSection = document.getElementById("contact");
 

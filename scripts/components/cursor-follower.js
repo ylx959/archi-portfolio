@@ -1,6 +1,6 @@
-import { body } from "../core/dom.js?v=67";
-import { getCurrentSection } from "../core/sections.js?v=67";
-import { isEntered } from "../core/state.js?v=67";
+import { body } from "../core/dom.js?v=70";
+import { getCurrentSection } from "../core/sections.js?v=70";
+import { isEntered } from "../core/state.js?v=70";
 
 const cursorFollower = document.getElementById("cursorFollower");
 

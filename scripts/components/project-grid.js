@@ -1,6 +1,6 @@
-import { openProjectDetail } from "./project-detail.js?v=67";
-import { projectDetails } from "../core/project-data.js?v=67";
-import { formatCategory, getPreviewImageSrc } from "../core/utils.js?v=67";
+import { openProjectDetail } from "./project-detail.js?v=70";
+import { projectDetails } from "../core/project-data.js?v=70";
+import { formatCategory, getPreviewImageSrc } from "../core/utils.js?v=70";
 
 const viewToggle = document.getElementById("viewToggle");
 
