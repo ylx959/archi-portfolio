@@ -1,9 +1,9 @@
-import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=57";
-import { body, html } from "../core/dom.js?v=57";
-import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=57";
-import { getCurrentSection } from "../core/sections.js?v=57";
-import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=57";
-import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=57";
+import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=58";
+import { body, html } from "../core/dom.js?v=58";
+import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=58";
+import { getCurrentSection } from "../core/sections.js?v=58";
+import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=58";
+import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=58";
 
 export const enterForm = document.getElementById("enterForm");
 
@@ -216,7 +216,15 @@ function startHeroIntroSequence() {
         return;
     }
 
+    // Empty the line before unhiding it: the markup ships with the headline in
+    // place (it is what the intro ends on), and revealing it as-is would show
+    // the ending for a frame before the first status line is scrambled in.
+    heroExpandWords.forEach(function (word) {
+        word.textContent = "";
+    });
+
     hero.classList.add("is-intro-loading");
+    hero.classList.remove("is-intro-pending");
 
     let isImageReady = false;
 

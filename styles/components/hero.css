@@ -169,6 +169,18 @@
     animation: none;
 }
 
+/* The headline and the hint are static markup, so they paint with the HTML —
+   long before the modules have parsed and the intro has had a chance to replace
+   the line with "loading...". The class is in index.html and the hero strips it
+   the moment the intro starts, so the page opens on white rather than flashing
+   its own ending. */
+.hero.is-intro-pending .hero-expand-title,
+.hero.is-intro-pending .hero-expand-hint {
+    opacity: 0;
+    visibility: hidden;
+    animation: none;
+}
+
 /* The status lines are not the headline: small, tracked, lower case, set in the
    UI sans. The switch to the serif headline happens while the line is empty, so
    the size never visibly jumps. */
