@@ -1,7 +1,7 @@
-import { reducedMotionQuery } from "../core/constants.js?v=58";
-import { onScrollSettle, onWheelActivity, smoothScrollToSection } from "../core/scroll.js?v=58";
-import { getCurrentSection, isSectionInViewport } from "../core/sections.js?v=58";
-import { isEntered } from "../core/state.js?v=58";
+import { reducedMotionQuery } from "../core/constants.js?v=67";
+import { onScrollSettle, onWheelActivity, smoothScrollToSection } from "../core/scroll.js?v=67";
+import { getCurrentSection, isSectionInViewport } from "../core/sections.js?v=67";
+import { isEntered } from "../core/state.js?v=67";
 
 const sectionReturn = document.getElementById("sectionReturn");
 

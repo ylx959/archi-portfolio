@@ -389,6 +389,31 @@
     transition: transform 1.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.75s ease, opacity 0.75s ease;
 }
 
+/* The blurred stand-in, shown only while project-grid.js is still waiting on the
+   background image. It is keyed off `is-image-pending` rather than being the
+   default so that a card whose thumbnail is already cached — or a visitor whose
+   modules never ran — sees the picture straight away instead of a blur that
+   nothing will ever clear. */
+.project-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: var(--preview-image);
+    background-size: cover;
+    background-position: center;
+    /* scaled up so the blur has pixels to bleed into and cannot show the card
+       through at the edges */
+    filter: blur(16px);
+    transform: scale(1.12);
+    opacity: 0;
+    transition: opacity 0.55s ease;
+}
+
+.project-card.is-image-pending::before {
+    opacity: 1;
+}
+
 .project-image {
     position: relative;
     width: 100%;
@@ -397,7 +422,11 @@
     background-position: center center;
     background-repeat: no-repeat;
     transform: scale(1.14);
-    transition: transform 0.9s ease;
+    transition: transform 0.9s ease, opacity 0.55s ease;
+}
+
+.project-card.is-image-pending .project-image {
+    opacity: 0;
 }
 
 .project-image::after {

@@ -1,4 +1,4 @@
-import { body } from "../core/dom.js?v=58";
+import { body } from "../core/dom.js?v=67";
 
 const drawingsTrack = document.getElementById("drawingsTrack");
 const drawingsDetailOverlay = document.getElementById("drawingsDetailOverlay");

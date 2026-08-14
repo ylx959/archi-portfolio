@@ -18,30 +18,51 @@ const projectDetails = Array.isArray(context.window.MINEPORT_PROJECT_DETAIL_DATA
     ? context.window.MINEPORT_PROJECT_DETAIL_DATA
     : [];
 
-function getSourcePath(imageUrl) {
-    return path.join(root, imageUrl.split("?")[0].replace(/^\.\.\//, ""));
+// Everything is reduced to a repo-relative "assets/images/…" first, because the
+// two places images are declared spell the same file differently: the data file
+// writes "../assets/images/…", while a stylesheet one folder deeper writes
+// "../../assets/images/…".
+function toRepoRelative(imageUrl) {
+    return imageUrl.split("?")[0].replace(/^(\.\.\/)+/, "");
 }
 
-function getPreviewPath(imageUrl) {
-    const imagePath = imageUrl
-        .split("?")[0]
-        .replace(/^\.\.\/assets\/images\//, "assets/images/previews/")
-        .replace(/\.[^/.]+$/, ".jpg");
-
+function getSourcePath(imagePath) {
     return path.join(root, imagePath);
+}
+
+function getPreviewPath(imagePath) {
+    return path.join(root, imagePath
+        .replace(/^assets\/images\//, "assets/images/previews/")
+        .replace(/\.[^/.]+$/, ".jpg"));
 }
 
 const imageUrls = new Set();
 
 projectDetails.forEach(function (detail) {
     (detail.images || []).forEach(function (imageUrl) {
-        imageUrls.add(imageUrl);
+        imageUrls.add(toRepoRelative(imageUrl));
     });
 
     (detail.galleryImages || []).forEach(function (imageUrl) {
-        imageUrls.add(imageUrl);
+        imageUrls.add(toRepoRelative(imageUrl));
     });
 });
+
+// Card thumbnails are not in the data file at all — they are background-image
+// rules in the grid stylesheet. Read them from there rather than rebuilding the
+// path convention here, so a card that moves its file stays covered.
+const cardStylesheet = path.join(root, "styles", "components", "project-grid.css");
+
+if (fs.existsSync(cardStylesheet)) {
+    const stylesheet = fs.readFileSync(cardStylesheet, "utf8");
+    const urlPattern = /url\(["']?((?:\.\.\/)+assets\/images\/[^"')]+)["']?\)/g;
+    let cardMatch = urlPattern.exec(stylesheet);
+
+    while (cardMatch) {
+        imageUrls.add(toRepoRelative(cardMatch[1]));
+        cardMatch = urlPattern.exec(stylesheet);
+    }
+}
 
 let createdCount = 0;
 let skippedCount = 0;

@@ -1,8 +1,8 @@
-import { projectImageBatchSize } from "../core/constants.js?v=58";
-import { body } from "../core/dom.js?v=58";
-import { projectDetails } from "../core/project-data.js?v=58";
-import { cancelInertiaScroll, syncInertiaScrollPosition } from "../core/scroll.js?v=58";
-import { escapeAttribute, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js?v=58";
+import { projectImageBatchSize } from "../core/constants.js?v=67";
+import { body } from "../core/dom.js?v=67";
+import { projectDetails } from "../core/project-data.js?v=67";
+import { cancelInertiaScroll, syncInertiaScrollPosition } from "../core/scroll.js?v=67";
+import { escapeAttribute, getPreviewImageSrc, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js?v=67";
 
 const projectDetailOverlay = document.getElementById("projectDetailOverlay");
 
@@ -68,13 +68,6 @@ function buildFullDescription(detail) {
         "The result is a project that values calm over spectacle and precision over excess. It aims to feel immersive without becoming heavy, and expressive without losing discipline. In this way, " + detail.title + " becomes less a static formal statement and more a carefully paced environment, where each movement reveals another layer of spatial character, visual stillness, and lived atmosphere over time.";
 }
 
-function getPreviewImageSrc(imageSrc) {
-    return String(imageSrc || "")
-        .split("?")[0]
-        .replace("../assets/images/", "../assets/images/previews/")
-        .replace(/\.[^/.]+$/, ".jpg") + "?v=2";
-}
-
 function getPreviewImageStyle(imageSrc) {
     const previewSrc = encodeURI(getPreviewImageSrc(imageSrc)).replace(/'/g, "%27");
     return "--preview-image: url('" + previewSrc + "');";
@@ -85,6 +78,40 @@ function markProgressiveImageLoaded(image) {
 
     if (wrapper) {
         wrapper.classList.add("is-loaded");
+    }
+}
+
+// Hold the image's box open before the full file arrives. Without this a figure
+// is barely taller than its border until the real image reports a size, and then
+// every image in turn snaps from nothing to full height and shoves the rest of
+// the gallery down — the reason scrolling a detail page reads as jumping.
+//
+// The ratio comes from the preview thumbnail because it is the only thing we
+// have early: sips scales it proportionally, it weighs about a kilobyte, and the
+// blurred placeholder is already fetching that exact URL, so this shares the
+// browser's cache entry rather than costing a second request.
+function reserveProgressiveImageBox(image, previewSrc) {
+    const probe = new Image();
+
+    // Pinned rather than left to the loaded image's own ratio: the preview's
+    // short side is rounded to a whole pixel, so the two differ by up to a
+    // percent, and letting the intrinsic value take over on load would put back
+    // a small version of the jump this exists to remove. `contain` absorbs the
+    // difference as a hairline of the figure's white.
+    function applyRatio() {
+        if (probe.naturalWidth && probe.naturalHeight) {
+            image.style.aspectRatio = probe.naturalWidth + " / " + probe.naturalHeight;
+        }
+    }
+
+    probe.addEventListener("load", applyRatio, { once: true });
+    probe.decoding = "async";
+    probe.src = previewSrc;
+
+    // Reopening a project, or any two projects sharing a preview, hits the cache:
+    // take the size in this frame rather than collapsing for one and expanding.
+    if (probe.complete) {
+        applyRatio();
     }
 }
 
@@ -121,6 +148,7 @@ function appendProjectDetailImage(imageIndex) {
     image.decoding = "async";
     image.draggable = false;
     image.addEventListener("click", blockProjectDetailImageNavigation);
+    reserveProgressiveImageBox(image, getPreviewImageSrc(imageSrc));
     figure.appendChild(image);
     projectDetailGallery.appendChild(figure);
     setupProgressiveImage(image);

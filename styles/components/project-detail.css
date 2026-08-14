@@ -698,7 +698,10 @@ body.is-project-detail-open .project-showcase {
 
 @media (max-width: 768px) {
     .project-detail-overlay {
-        padding: 12px;
+        /* This padding is the whole inset — the shell below is 100% of what it
+           leaves. Capped in vw so the smallest phones are not squeezed: 30px a
+           side on a 390px screen, proportionally less below ~375px. */
+        padding: min(30px, 8vw);
     }
 
     .drawings-detail-overlay {
@@ -721,6 +724,10 @@ body.is-project-detail-open .project-showcase {
     .project-detail-shell {
         display: block;
         grid-template-columns: 1fr;
+        /* The desktop width subtracts a fixed 160px of breathing room, which on a
+           phone eats most of the screen — 230px of shell on a 390px viewport. Here
+           the overlay's own 12px padding is the whole inset. */
+        width: min(100%, 820px);
         height: min(92vh, 960px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;

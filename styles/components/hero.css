@@ -688,22 +688,61 @@
         font-size: 13px;
         line-height: 1.6;
         letter-spacing: 0.07em;
+        /* Stacks the two copies below into one cell. */
+        display: grid;
+    }
+
+    /* The tail is scrambled in one character at a time, so at this width the
+       sentence gains lines as it types — and since .content is absolutely
+       centred, every line it gains pushes the form down by half a line. The
+       second copy already in the markup is stacked underneath holding the
+       finished sentence at full height, so the block is its final size from the
+       first frame and the form is placed once. It stays aria-hidden; visibility
+       rather than display is what makes it reserve the space. */
+    .description-copy {
+        grid-area: 1 / 1;
+    }
+
+    .description-copy[aria-hidden="true"] {
+        display: block;
+        visibility: hidden;
     }
 
     .form {
-        gap: 8px;
+        gap: 6px;
+        /* Softer and slower than the desktop fade: on a phone the form is the
+           only thing arriving on an otherwise settled screen, so it drifts up
+           rather than simply brightening. The end state is the shared
+           .is-visible rule; only the starting point and the curve change here.
+
+           Deliberately opacity and transform ONLY. A blur was tried and had to
+           go: an animating blur radius cannot be composited, so it re-rasterises
+           on the main thread every frame — and this arrives while the hero copy
+           is still being scrambled, which is rewriting text on that same thread
+           every 55ms. The blur stuttered against it; these two do not, because
+           they run on the compositor whatever the main thread is doing. */
+        opacity: 0.02;
+        transform: translateY(18px);
+        will-change: opacity, transform;
+        transition:
+            opacity 3.4s cubic-bezier(0.33, 0, 0.15, 1),
+            transform 3.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .input {
-        width: min(190px, 58vw);
-        padding: 8px 14px;
+        width: min(158px, 48vw);
+        padding: 6px 12px;
+        /* Held at 16px on purpose, even though the field is smaller: iOS Safari
+           zooms the whole page when a text field under 16px takes focus, and the
+           hero never recovers its framing afterwards. The box shrinks, the type
+           does not. */
         font-size: 16px;
     }
 
     .btn {
-        padding: 8px 18px;
-        font-size: 11px;
-        letter-spacing: 0.18em;
+        padding: 6px 14px;
+        font-size: 10px;
+        letter-spacing: 0.16em;
     }
 }
 
@@ -713,8 +752,13 @@
    window still gets the full effect. */
 @media (hover: none), (pointer: coarse) {
     .hero {
-        --hero-media-width: calc(100% - 16px);
-        --hero-media-height: calc(100% - 16px);
+        /* Must match the expansion's endpoint (`100% - 24px`, in .hero-visual)
+           exactly. Touch has no scrub, so hero.js jumps the progress straight to
+           1 — and any difference between the two shows up as the card twitching
+           to a new size the instant the enter form appears. These were 16px,
+           which is why it flinched 4px in on every side. */
+        --hero-media-width: calc(100% - 24px);
+        --hero-media-height: calc(100% - 24px);
         --hero-media-zoom: 1;
         --hero-word-travel: 0px;
     }
@@ -736,6 +780,15 @@
         opacity: 1;
         background: #111111;
         transition: none;
+    }
+
+    /* On a wheel the scrim's opacity is read straight off --hero-expand-progress,
+       so it arrives as gradually as the media does and must not be transitioned —
+       a transition there would lag the scrub. Touch has no scrub: hero.js jumps
+       that variable from 0 to 1 in a single frame, which drops the whole dark
+       gradient on at once. This gives that jump somewhere to travel. */
+    .hero-visual::after {
+        transition: opacity 1.8s cubic-bezier(0.33, 0, 0.15, 1);
     }
 
     .hero-expand-hint {

@@ -1,6 +1,6 @@
-import { openProjectDetail } from "./project-detail.js?v=58";
-import { projectDetails } from "../core/project-data.js?v=58";
-import { formatCategory } from "../core/utils.js?v=58";
+import { openProjectDetail } from "./project-detail.js?v=67";
+import { projectDetails } from "../core/project-data.js?v=67";
+import { formatCategory, getPreviewImageSrc } from "../core/utils.js?v=67";
 
 const viewToggle = document.getElementById("viewToggle");
 
@@ -41,6 +41,51 @@ let timeFilterCloseTimer = null;
 let typologyFilterCloseTimer = null;
 
 let projectEmptyState = null;
+
+// A card's thumbnail is a CSS background (`.image-grid-NN`), which fires no load
+// event — so on its own it can only appear, mid-scroll, at full contrast. This
+// gives the card the one thing the background cannot report: a probe on the same
+// URL, which the browser serves from the very same cache entry, so nothing is
+// downloaded twice. Until it answers the card wears the blurred preview.
+function setupProjectCardImage(card) {
+    const image = card.querySelector(".project-image");
+
+    if (!image) {
+        return;
+    }
+
+    const backgroundImage = window.getComputedStyle(image).backgroundImage;
+    const match = /url\(["']?([^"')]+)["']?\)/.exec(backgroundImage);
+
+    if (!match) {
+        return;
+    }
+
+    const probe = new Image();
+
+    function settle() {
+        card.classList.remove("is-image-pending");
+        card.classList.add("is-image-loaded");
+    }
+
+    probe.decoding = "async";
+    probe.src = match[1];
+
+    // The grid sits below the fold but its backgrounds start downloading with the
+    // page, so by the time the modules run some cards are already there. Those
+    // must not be hidden and faded back in — that would be a flash backwards.
+    if (probe.complete && probe.naturalWidth > 0) {
+        card.classList.add("is-image-loaded");
+        return;
+    }
+
+    card.style.setProperty("--preview-image", "url('" + encodeURI(getPreviewImageSrc(match[1])).replace(/'/g, "%27") + "')");
+    card.classList.add("is-image-pending");
+    // A missing or broken file settles too: better a card that reveals whatever
+    // the background can show than one stuck behind a blur for good.
+    probe.addEventListener("load", settle, { once: true });
+    probe.addEventListener("error", settle, { once: true });
+}
 
 function applyProjectFilters() {
     let visibleCount = 0;
@@ -245,6 +290,7 @@ function resetSecondaryProjectFilters() {
 export function initProjectGrid() {
     projectCards.forEach(function (card, index) {
         const detail = projectDetails[index];
+        setupProjectCardImage(card);
         card.style.setProperty("--card-index", index);
         card.setAttribute("role", "button");
         card.setAttribute("tabindex", "0");

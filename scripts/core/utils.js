@@ -1,4 +1,4 @@
-import { heroScrambleCharacters } from "./constants.js?v=58";
+import { heroScrambleCharacters } from "./constants.js?v=67";
 
 export function escapeAttribute(value) {
     return String(value || "")
@@ -24,6 +24,19 @@ export function easeOutBack(progress, overshoot) {
 
 export function isMobileHeroMode() {
     return window.innerWidth <= 768;
+}
+
+// generate-previews.js mirrors the whole image tree under previews/ as small
+// JPEGs, so the blurred placeholder for any image is that same path with the one
+// folder inserted. Shared because both the project cards and the detail overlay
+// need it, and they arrive with different prefixes: the data file writes
+// "../assets/images/…" while a card's URL comes back from getComputedStyle
+// already absolute.
+export function getPreviewImageSrc(imageSrc) {
+    return String(imageSrc || "")
+        .split("?")[0]
+        .replace("assets/images/", "assets/images/previews/")
+        .replace(/\.[^/.]+$/, ".jpg") + "?v=2";
 }
 
 function setStaticText(element, text) {

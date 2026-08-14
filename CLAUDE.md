@@ -54,7 +54,7 @@ Project cards are **static markup** in `index.html` (`.project-grid > article.pr
 
 Adding a project therefore touches four places: the `<article>` in `index.html`, a `createProjectDetail(...)` entry at the matching index, an `.image-grid-NN` rule, and the image folders under `assets/images/projects/projectN/{card,detail,gallery}/`.
 
-Image URLs in the data file are written `../assets/images/...` even though `index.html` sits at the repo root (browsers clamp the leading `../`). Keep that prefix — `getPreviewImageSrc()` in `components/project-detail.js` rewrites the literal `../assets/images/` into `../assets/images/previews/` to find the blurred placeholder, and `generate-previews.js` mirrors the same folder tree.
+Image URLs in the data file are written `../assets/images/...` even though `index.html` sits at the repo root (browsers clamp the leading `../`). Keep that prefix — `getPreviewImageSrc()` in `core/utils.js` inserts `previews/` after `assets/images/` to find the blurred placeholder, and `generate-previews.js` mirrors the same folder tree. Card thumbnails are covered too, even though they are declared as `background-image` rules rather than data entries: the script reads those URLs straight out of `project-grid.css`.
 
 Note the different rule for **CSS**: `url()` resolves against the stylesheet's own location, so component stylesheets one level deep need `../../assets/…`. Moving a rule between `styles/` and `styles/components/` silently breaks its images.
 
