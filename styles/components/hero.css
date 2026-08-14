@@ -5,7 +5,9 @@
     padding: 12px;
     overflow: clip;
     background: #ffffff;
-    --hero-card-width: min(50vw, 640px);
+    /* Entering returns the media to the size it dropped in at, so the comma
+       scrub starts from the same card the visitor first saw. */
+    --hero-card-width: var(--hero-media-width);
     --hero-copy-gap: clamp(16px, 2vw, 28px);
     --hero-copy-edge-padding: clamp(18px, 3vw, 34px);
     /* 0 = collapsed card, 1 = filling the hero. The wheel only moves a target
@@ -28,8 +30,6 @@
     --hero-comma-width: 24px;
     --hero-comma-height: 58px;
     --hero-comma-shift-y: 18px;
-    /* how tall the card is once the name is in, before the comma scrub starts */
-    --hero-entered-card-height: min(620px, 70vh);
 }
 
 .hero-main-image {
@@ -70,10 +70,27 @@
        to be re-rasterised whenever any of its values change, which cost more per
        frame than everything else in the scrub combined. */
     box-shadow: 0 24px 64px rgba(16, 14, 13, 0.16);
-    opacity: 1;
+    /* The page opens on nothing but the status line. The card is only brought in
+       once the intro has finished talking — see .is-card-revealed. */
+    opacity: 0;
     transform-origin: center center;
-    transform: translate(-50%, -50%);
-    transition: opacity 0.8s ease;
+    /* hero-card-drop.js writes the fall offset and the impact squash; both rest
+       at their neutral values so this composes to the plain centring transform
+       once the card has landed. */
+    transform:
+        translate(calc(-50% + var(--hero-card-drop-x, 0px)), calc(-50% + var(--hero-card-drop-y, 0px)))
+        rotate(var(--hero-card-drop-rot, 0deg))
+        scale(var(--hero-card-drop-scale-x, 1), var(--hero-card-drop-scale-y, 1));
+}
+
+.hero.is-card-revealed .hero-visual {
+    opacity: 1;
+}
+
+/* The card compresses against the surface it lands on, not around its middle. */
+.hero.is-card-dropping .hero-visual {
+    transform-origin: center bottom;
+    transition: none;
 }
 
 /* The headline sits over the card and splits apart as the media takes over. */
@@ -102,17 +119,31 @@
     opacity: clamp(0, calc(1.6 - (var(--hero-expand-progress) * 1.9)), 1);
 }
 
+/* Each piece carries two motions at once: the drop it arrives with, and the
+   travel it takes as the media expands. Both compose into one transform, and
+   both rest at neutral, so neither has to know about the other. */
 .hero-expand-word {
     display: inline-block;
     will-change: transform;
+    transform-origin: center bottom;
+    transform:
+        translate3d(var(--hero-word-drop-x, 0px), var(--hero-word-drop-y, 0px), 0)
+        rotate(var(--hero-word-drop-rot, 0deg))
+        scale(var(--hero-word-drop-scale-x, 1), var(--hero-word-drop-scale-y, 1));
 }
 
 .hero-expand-word-left {
-    transform: translate3d(calc(var(--hero-expand-progress) * var(--hero-word-travel) * -1), 0, 0);
+    transform:
+        translate3d(calc((var(--hero-expand-progress) * var(--hero-word-travel) * -1) + var(--hero-word-drop-x, 0px)), var(--hero-word-drop-y, 0px), 0)
+        rotate(var(--hero-word-drop-rot, 0deg))
+        scale(var(--hero-word-drop-scale-x, 1), var(--hero-word-drop-scale-y, 1));
 }
 
 .hero-expand-word-right {
-    transform: translate3d(calc(var(--hero-expand-progress) * var(--hero-word-travel)), 0, 0);
+    transform:
+        translate3d(calc((var(--hero-expand-progress) * var(--hero-word-travel)) + var(--hero-word-drop-x, 0px)), var(--hero-word-drop-y, 0px), 0)
+        rotate(var(--hero-word-drop-rot, 0deg))
+        scale(var(--hero-word-drop-scale-x, 1), var(--hero-word-drop-scale-y, 1));
 }
 
 .hero-expand-hint {
@@ -300,7 +331,7 @@
     top: 50%;
     left: 50%;
     width: calc(var(--hero-card-width) - ((var(--hero-card-width) - var(--hero-comma-width)) * var(--hero-story-progress)));
-    height: calc(var(--hero-entered-card-height) - ((var(--hero-entered-card-height) - var(--hero-comma-height)) * var(--hero-story-progress)));
+    height: calc(var(--hero-media-height) - ((var(--hero-media-height) - var(--hero-comma-height)) * var(--hero-story-progress)));
     border-radius: calc(30px + (999px * var(--hero-story-progress)));
     clip-path: inset(0 round calc(30px + (999px * var(--hero-story-progress))));
     transform: translate(-50%, calc(-50% + (var(--hero-comma-shift-y) * var(--hero-story-progress)))) rotate(calc(10deg * var(--hero-story-progress)));
@@ -586,7 +617,6 @@
 @media (max-width: 768px) {
     .hero {
         padding: 8px;
-        --hero-card-width: min(74vw, 420px);
         --hero-copy-gap: 10px;
         --hero-copy-edge-padding: 10px;
         --hero-side-cluster-shift: 28px;

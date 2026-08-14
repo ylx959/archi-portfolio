@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "../core/constants.js?v=47";
+import { reducedMotionQuery } from "../core/constants.js?v=57";
 
 // "THE MOMENTS / that moved me" — the heading is split into per-character spans
 // so it can do two things: float in and out with the section (that part is pure

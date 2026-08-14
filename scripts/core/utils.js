@@ -1,4 +1,4 @@
-import { heroScrambleCharacters } from "./constants.js?v=47";
+import { heroScrambleCharacters } from "./constants.js?v=57";
 
 export function escapeAttribute(value) {
     return String(value || "")
@@ -90,7 +90,7 @@ const heroScrambleTimers = new WeakMap();
 
 export function scrambleHeroText(element, text, options) {
     if (!element || !text) {
-        return;
+        return Promise.resolve();
     }
 
     const existingTimer = heroScrambleTimers.get(element);
@@ -117,9 +117,13 @@ export function scrambleHeroText(element, text, options) {
         return Math.min(1, appearAt[index] + 0.14 + (Math.random() * 0.4));
     });
 
-    let step = 0;
-
     element.classList.add("is-scrambling");
+
+    // Resolves when this run actually finishes, not when a wall-clock estimate
+    // says it should have. Interval timers overrun — a background tab clamps them
+    // to a second — and a caller that guesses will act mid-animation.
+    return new Promise(function (resolve) {
+    let step = 0;
 
     const timer = window.setInterval(function () {
         const progress = step / steps;
@@ -150,10 +154,12 @@ export function scrambleHeroText(element, text, options) {
             heroScrambleTimers.delete(element);
             element.textContent = text;
             element.classList.remove("is-scrambling");
+            resolve();
         }
     }, speed * 1000);
 
     heroScrambleTimers.set(element, timer);
+    });
 }
 
 // The other half of the effect: the line dissolves back into noise and shortens
@@ -161,13 +167,13 @@ export function scrambleHeroText(element, text, options) {
 // swapped in place.
 export function scrambleHeroTextOut(element, options) {
     if (!element) {
-        return;
+        return Promise.resolve();
     }
 
     const text = element.textContent;
 
     if (!text) {
-        return;
+        return Promise.resolve();
     }
 
     const existingTimer = heroScrambleTimers.get(element);
@@ -181,9 +187,11 @@ export function scrambleHeroTextOut(element, options) {
     const characters = options && options.characters ? options.characters : heroScrambleCharacters;
     const steps = Math.max(1, Math.round(duration / speed));
     const source = Array.from(text);
-    let step = 0;
 
     element.classList.add("is-scrambling");
+
+    return new Promise(function (resolve) {
+    let step = 0;
 
     const timer = window.setInterval(function () {
         const progress = Math.min(step / steps, 1);
@@ -211,8 +219,10 @@ export function scrambleHeroTextOut(element, options) {
             heroScrambleTimers.delete(element);
             element.textContent = "";
             element.classList.remove("is-scrambling");
+            resolve();
         }
     }, speed * 1000);
 
     heroScrambleTimers.set(element, timer);
+    });
 }

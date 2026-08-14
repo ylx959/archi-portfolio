@@ -61,6 +61,10 @@
     line-height: 0.98;
     letter-spacing: 0;
     color: #171514;
+    /* The highlighted words react to hover, so dragging across the line should
+       drive that rather than paint a text selection over it. */
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .about-title:focus-visible {

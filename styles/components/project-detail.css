@@ -53,8 +53,10 @@
     display: grid;
     grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.58fr);
     gap: 22px;
-    width: min(1490px, calc(100vw - 56px));
-    height: min(88vh, 860px);
+    /* Scaled down from 1490x860 by 0.85, ratio kept: the overlay used to sit
+       almost edge to edge, which left nothing between it and the page behind. */
+    width: min(1270px, calc(100vw - 160px));
+    height: min(75vh, 732px);
     padding: 72px 12px 12px;
     overflow: hidden;
     border-radius: 14px;

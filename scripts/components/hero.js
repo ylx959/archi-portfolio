@@ -1,9 +1,9 @@
-import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=47";
-import { body, html } from "../core/dom.js?v=47";
-import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=47";
-import { getCurrentSection } from "../core/sections.js?v=47";
-import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=47";
-import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=47";
+import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=57";
+import { body, html } from "../core/dom.js?v=57";
+import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=57";
+import { getCurrentSection } from "../core/sections.js?v=57";
+import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=57";
+import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=57";
 
 export const enterForm = document.getElementById("enterForm");
 
@@ -21,9 +21,7 @@ const heroMainImages = document.querySelectorAll(".hero-main-image");
 
 const heroEnteredName = document.getElementById("heroEnteredName");
 
-const heroExpandWordLeft = document.querySelector(".hero-expand-word-left");
-
-const heroExpandWordRight = document.querySelector(".hero-expand-word-right");
+const heroExpandWords = Array.from(document.querySelectorAll(".hero-expand-word"));
 
 export const heroState = {
     phase: HERO_PHASES.IDLE,
@@ -80,6 +78,8 @@ let isHeroIntroComplete = false;
 const heroIntroTiming = {
     loadingHold: 620,
     thanksHold: 1400,
+    // the drop reports when it lands; this is only the fallback
+    cardDropTimeout: 2600,
     imageTimeout: 9000
 };
 
@@ -146,20 +146,20 @@ function delay(duration) {
 
 function setHeroTitleWord(element, text, duration, characters) {
     if (!element) {
-        return;
+        return Promise.resolve();
     }
 
     if (!text) {
         element.textContent = "";
-        return;
+        return Promise.resolve();
     }
 
     if (reducedMotionQuery.matches) {
         element.textContent = text;
-        return;
+        return Promise.resolve();
     }
 
-    scrambleHeroText(element, text, {
+    return scrambleHeroText(element, text, {
         duration: duration,
         speed: 0.045,
         characters: characters
@@ -167,26 +167,45 @@ function setHeroTitleWord(element, text, duration, characters) {
 }
 
 // Scramble a line in; resolves once it has finished resolving.
-function scrambleLineIn(leftText, rightText, duration, characters) {
-    setHeroTitleWord(heroExpandWordLeft, leftText, duration, characters);
-    setHeroTitleWord(heroExpandWordRight, rightText, duration, characters);
-
-    return delay(reducedMotionQuery.matches ? 0 : (duration * 1000) + 140);
+function scrambleLineIn(texts, duration, characters) {
+    return Promise.all(heroExpandWords.map(function (word, index) {
+        return setHeroTitleWord(word, texts[index] || "", duration, characters);
+    }));
 }
 
 // Dissolve whatever is on screen back to nothing, so the next line arrives from
 // empty instead of being swapped in place.
 function scrambleLineOut(duration) {
-    if (reducedMotionQuery.matches) {
-        setHeroTitleWord(heroExpandWordLeft, "", 0);
-        setHeroTitleWord(heroExpandWordRight, "", 0);
-        return delay(0);
-    }
+    return Promise.all(heroExpandWords.map(function (word) {
+        if (reducedMotionQuery.matches) {
+            word.textContent = "";
+            return Promise.resolve();
+        }
 
-    scrambleHeroTextOut(heroExpandWordLeft, { duration: duration, speed: 0.04, characters: heroScrambleLowercase });
-    scrambleHeroTextOut(heroExpandWordRight, { duration: duration, speed: 0.04, characters: heroScrambleLowercase });
+        return scrambleHeroTextOut(word, { duration: duration, speed: 0.04, characters: heroScrambleLowercase });
+    }));
+}
 
-    return delay((duration * 1000) + 120);
+// Hands the card off to hero-card-drop.js and waits for it to land. The timeout
+// is a floor, not the schedule: if that component is missing the intro still runs.
+function dropHeroPart(target) {
+    return new Promise(function (resolve) {
+        let isSettled = false;
+
+        function settle(event) {
+            if (isSettled || (event && event.detail && event.detail.target !== target)) {
+                return;
+            }
+
+            isSettled = true;
+            document.removeEventListener("portfolio:hero-dropped", settle);
+            resolve();
+        }
+
+        document.addEventListener("portfolio:hero-dropped", settle);
+        window.setTimeout(settle, heroIntroTiming.cardDropTimeout);
+        document.dispatchEvent(new CustomEvent("portfolio:hero-drop", { detail: { target: target } }));
+    });
 }
 
 // Loading -> Thanks for waiting -> Architecture & Design, with the line
@@ -211,7 +230,7 @@ function startHeroIntroSequence() {
     // Keep pulsing the loading line for as long as the download takes. Each pass
     // is a full in-and-out, so a slow connection looks alive rather than stuck.
     function loadingCycle() {
-        return scrambleLineIn("loading...", "", 0.85, heroScrambleLowercase)
+        return scrambleLineIn(["loading..."], 0.85, heroScrambleLowercase)
             .then(function () {
                 return delay(heroIntroTiming.loadingHold);
             })
@@ -229,7 +248,7 @@ function startHeroIntroSequence() {
 
     loadingCycle()
         .then(function () {
-            return scrambleLineIn("thanks for waiting - all set.", "", 1.05, heroScrambleLowercase);
+            return scrambleLineIn(["thanks for waiting - all set."], 1.05, heroScrambleLowercase);
         })
         .then(function () {
             return delay(heroIntroTiming.thanksHold);
@@ -238,10 +257,20 @@ function startHeroIntroSequence() {
             return scrambleLineOut(0.6);
         })
         .then(function () {
+            // Only now does the card exist. Up to this point the page has been
+            // nothing but the status line on white. hero-card-drop.js owns the
+            // fall and answers when it has stopped bouncing.
+            return dropHeroPart("card");
+        })
+        .then(function () {
             // The headline is set differently from the status lines, and the
-            // switch happens while the line is empty so nothing jumps size.
+            // switch happens while the line is empty so nothing jumps size. Its
+            // three pieces then fall in the same way the card did.
             hero.classList.add("is-intro-headline");
-            return scrambleLineIn("Architecture", "& Design", 1.15);
+            heroExpandWords[0].textContent = "Architecture";
+            heroExpandWords[1].textContent = "&";
+            heroExpandWords[2].textContent = "Design";
+            return dropHeroPart("headline");
         })
         .then(function () {
             isHeroIntroComplete = true;
@@ -456,7 +485,15 @@ export function isHeroScrollLocked() {
         return !isHeroStoryActive();
     }
 
-    return window.scrollY <= 6 && (!heroState.isStoryUnlocked || heroState.isAwaitingAutoScroll);
+    // From the moment the comma settles until the projects section has actually
+    // arrived, the wheel does nothing at all. Without the scrollY-free branch the
+    // lock lifts as soon as the programmatic scroll starts moving, and a stray
+    // wheel event strands the page between two sections.
+    if (heroState.isAwaitingAutoScroll) {
+        return true;
+    }
+
+    return window.scrollY <= 6 && !heroState.isStoryUnlocked;
 }
 
 function writeExpandProgress(progress) {
@@ -699,8 +736,13 @@ function shouldSkipHeroExpand() {
     return isHeroTouchMode() || reducedMotionQuery.matches;
 }
 
+// Touch skips act one entirely, so this must not run before the intro has
+// finished: mobile browsers fire `resize` on their own (URL bar collapsing, the
+// viewport settling after load, the keyboard), and without the intro guard any
+// one of those snaps the hero to its expanded state and shows the enter form
+// while the headline is still dropping.
 function syncHeroExpandMode() {
-    if (isHeroExpandComplete || !shouldSkipHeroExpand()) {
+    if (isHeroExpandComplete || !isHeroIntroComplete || !shouldSkipHeroExpand()) {
         return;
     }
 
