@@ -8,6 +8,19 @@
     --hero-card-width: min(50vw, 640px);
     --hero-copy-gap: clamp(16px, 2vw, 28px);
     --hero-copy-edge-padding: clamp(18px, 3vw, 34px);
+    /* 0 = collapsed card, 1 = filling the hero. The wheel only moves a target
+       value; hero.js eases this one toward it a frame at a time. */
+    --hero-expand-progress: 0;
+    /* landscape at rest, roughly the aspect of main.jpg so `cover` barely crops */
+    --hero-media-width: min(500px, 62vw);
+    --hero-media-height: min(370px, 50vh);
+    /* How far the picture is zoomed in while the card is collapsed. The frame
+       grows and the picture shrinks at the same time: content starts large and
+       pulls back to its full self as the card takes over the screen. */
+    --hero-media-zoom: 1.9;
+    --hero-word-travel: 34vw;
+    /* Act two, after the name is submitted: the expanded media shrinks into a
+       comma with "Hello / <name>" on either side. */
     --hero-story-progress: 0;
     --hero-side-pull: 0;
     --hero-side-scale: 1;
@@ -15,19 +28,8 @@
     --hero-comma-width: 24px;
     --hero-comma-height: 58px;
     --hero-comma-shift-y: 18px;
-}
-
-.overlay {
-    position: absolute;
-    inset: 12px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #ffffff;
-    transition:
-        filter 1.4s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 1.4s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 1.2s ease,
-        background-size 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+    /* how tall the card is once the name is in, before the comma scrub starts */
+    --hero-entered-card-height: min(620px, 70vh);
 }
 
 .hero-main-image {
@@ -38,59 +40,118 @@
     height: 100%;
     object-fit: cover;
     object-position: center 76%;
+    /* The frame opens while the picture pulls back: at rest the image is zoomed
+       into one spot, and it scales down to its full self as the card expands. */
+    transform: scale(calc(var(--hero-media-zoom) - ((var(--hero-media-zoom) - 1) * var(--hero-expand-progress))));
+    transform-origin: center 76%;
     opacity: 0;
     transition: opacity 1.5s ease;
-}
-
-.hero.is-main-image-ready .hero-main-image-overlay {
-    opacity: 0.82;
 }
 
 .hero.is-main-image-ready .hero-main-image-visual {
     opacity: 1;
 }
 
-.overlay::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18)),
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.34), transparent 52%);
-    opacity: 0;
-    z-index: 1;
-    transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.hero.is-main-image-ready .overlay::after {
-    opacity: 0;
-}
-
+/* The expanding media. Every dimension is a straight interpolation on
+   --hero-expand-progress, so one number drives the whole reveal. */
 .hero-visual {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: calc(100% - 24px);
-    height: calc(100% - 24px);
+    /* ends at the same full-bleed size the hero card had before this rewrite, so
+       act two can hand straight over to the original comma morph */
+    width: calc(var(--hero-media-width) + ((100% - 24px - var(--hero-media-width)) * var(--hero-expand-progress)));
+    height: calc(var(--hero-media-height) + ((100% - 24px - var(--hero-media-height)) * var(--hero-expand-progress)));
     z-index: 1;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: calc(26px - (18px * var(--hero-expand-progress)));
     background: #ffffff;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.16),
-        0 24px 60px rgba(16, 14, 13, 0.18);
-    opacity: 0;
+    /* Deliberately NOT interpolated on progress: a blurred shadow this large has
+       to be re-rasterised whenever any of its values change, which cost more per
+       frame than everything else in the scrub combined. */
+    box-shadow: 0 24px 64px rgba(16, 14, 13, 0.16);
+    opacity: 1;
     transform-origin: center center;
     transform: translate(-50%, -50%);
-    transition:
-        width 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        height 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        border-radius 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        clip-path 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        transform 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        box-shadow 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
-        opacity 0.8s ease;
-    clip-path: inset(0 round 8px);
+    transition: opacity 0.8s ease;
+}
+
+/* The headline sits over the card and splits apart as the media takes over. */
+.hero-expand-title {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.24em;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #11100f;
+    font-family: "EB Garamond", "Iowan Old Style", "Times New Roman", serif;
+    font-size: clamp(1.3rem, 4.4vw, 4.5rem);
+    /* an old-style serif has no hairline weight, and its own proportions carry
+       the line — so no negative tracking either */
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1;
+    white-space: nowrap;
+    /* fades out over the last third, once the media is wide enough to carry the frame */
+    opacity: clamp(0, calc(1.6 - (var(--hero-expand-progress) * 1.9)), 1);
+}
+
+.hero-expand-word {
+    display: inline-block;
+    will-change: transform;
+}
+
+.hero-expand-word-left {
+    transform: translate3d(calc(var(--hero-expand-progress) * var(--hero-word-travel) * -1), 0, 0);
+}
+
+.hero-expand-word-right {
+    transform: translate3d(calc(var(--hero-expand-progress) * var(--hero-word-travel)), 0, 0);
+}
+
+.hero-expand-hint {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(28px, 5vh, 62px);
+    z-index: 3;
+    transform: translateX(-50%);
+    color: #8b8681;
+    font-size: 0.68rem;
+    font-weight: 300;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: clamp(0, calc(1 - (var(--hero-expand-progress) * 6)), 1);
+    animation: hero-expand-hint-pulse 2.4s ease-in-out infinite;
+}
+
+/* The hint invites a scroll, so it stays away until scrolling actually does
+   something — that is, until the intro sequence has handed over. */
+.hero.is-intro-loading .hero-expand-hint {
+    opacity: 0;
+    animation: none;
+}
+
+/* The status lines are not the headline: small, tracked, lower case, set in the
+   UI sans. The switch to the serif headline happens while the line is empty, so
+   the size never visibly jumps. */
+.hero.is-intro-loading:not(.is-intro-headline) .hero-expand-title {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: clamp(0.72rem, 0.95vw, 0.95rem);
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    color: #4a4641;
+}
+
+@keyframes hero-expand-hint-pulse {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 6px); }
 }
 
 .hero-visual::before {
@@ -108,22 +169,21 @@
     opacity: 1;
 }
 
+/* Scrim for the white hero copy. It arrives with the expansion rather than on a
+   class, because the copy only becomes readable once the media fills the frame. */
 .hero-visual::after {
     content: "";
-    display: none;
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, rgba(14, 11, 10, 0.22) 100%),
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 52%);
-    opacity: 0;
+        linear-gradient(180deg, rgba(14, 11, 10, 0.1), rgba(14, 11, 10, 0.34) 58%, rgba(14, 11, 10, 0.44)),
+        radial-gradient(circle at center, rgba(14, 11, 10, 0.26), transparent 62%);
+    opacity: clamp(0, calc((var(--hero-expand-progress) - 0.45) / 0.55), 1);
     z-index: 2;
     pointer-events: none;
-    transition: opacity 0.8s ease;
-}
-
-.hero.is-entered.is-main-image-ready .hero-visual::after {
-    opacity: 1;
+    /* promoted so the per-frame opacity change is a composite, not a repaint of
+       two full-bleed gradients */
+    will-change: opacity;
 }
 
 .hero-visual-sides {
@@ -165,6 +225,7 @@
     align-items: center;
     min-height: 1.2em;
     max-width: none;
+    /* Always sits beside the card, never on it, so it stays ink on the white page. */
     color: #111111;
     font-family: "Inter", Arial, sans-serif;
     font-size: clamp(3.5rem, 6.6vw, 7.4rem);
@@ -198,18 +259,31 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    /* hidden until the media has finished expanding — the enter form is the
+       reward for completing the scroll, not something waiting on top of it */
+    opacity: 0;
+    filter: blur(10px);
+    transform: translate(-50%, calc(-50% + 26px));
     width: calc(100% - ((var(--project-shell-padding) + var(--project-edge-inset)) * 2));
     max-width: 1320px;
     text-align: center;
     color: white;
-    z-index: 2;
+    z-index: 4;
+    pointer-events: none;
     transition:
         opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
         transform 1.1s cubic-bezier(0.22, 1, 0.36, 1),
         filter 1.1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.hero.is-expanded .content {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+}
+
+/* After the name is submitted the copy clears out and the greeting takes over. */
 .hero.is-entered .content {
     opacity: 0;
     filter: blur(12px);
@@ -217,22 +291,16 @@
     pointer-events: none;
 }
 
-.hero.is-entered .overlay {
-    transform: scale(0.985);
-    filter: saturate(0.8) blur(8px);
-    opacity: 0;
-}
-
-.hero.is-entered .overlay::after {
-    opacity: 0.88;
-}
-
+/* Act two, unchanged from the original: entering eases the full-bleed media down
+   to a portrait card over 2.08s, and the wheel then scrubs that card into the
+   comma. The transition lives here rather than on .hero-visual so act one, which
+   is written per frame from rAF, is not smoothed twice. */
 .hero.is-entered .hero-visual {
     inset: auto;
     top: 50%;
     left: 50%;
     width: calc(var(--hero-card-width) - ((var(--hero-card-width) - var(--hero-comma-width)) * var(--hero-story-progress)));
-    height: calc((100% - 24px) - (((100% - 24px) - var(--hero-comma-height)) * var(--hero-story-progress)));
+    height: calc(var(--hero-entered-card-height) - ((var(--hero-entered-card-height) - var(--hero-comma-height)) * var(--hero-story-progress)));
     border-radius: calc(30px + (999px * var(--hero-story-progress)));
     clip-path: inset(0 round calc(30px + (999px * var(--hero-story-progress))));
     transform: translate(-50%, calc(-50% + (var(--hero-comma-shift-y) * var(--hero-story-progress)))) rotate(calc(10deg * var(--hero-story-progress)));
@@ -240,12 +308,41 @@
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.16),
         0 38px 110px rgba(18, 15, 13, 0.28);
+    transition:
+        width 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        height 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        border-radius 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        clip-path 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        transform 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        box-shadow 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
+        opacity 0.8s ease;
 }
 
 .hero.is-comma-phase .hero-visual {
     border-radius: 0;
     clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
     background-position: center center;
+}
+
+/* Once the wheel takes over, every frame is written by JS — a transition here
+   would fight the scrub and lag a frame behind it. */
+.hero.is-story-scrubbing .hero-visual,
+.hero.is-story-complete .hero-visual,
+.hero.is-comma-phase .hero-visual {
+    transition: none;
+}
+
+.hero.is-story-scrubbing .hero-visual {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, calc(0.16 - (0.06 * var(--hero-story-progress)))),
+        0 calc(38px - (22px * var(--hero-story-progress))) calc(110px - (64px * var(--hero-story-progress))) rgba(18, 15, 13, calc(0.28 - (0.17 * var(--hero-story-progress))));
+}
+
+/* The scrim only exists to carry the white hero copy over the expanded media.
+   Once the name is in, the copy is gone and the card is the picture again. */
+.hero.is-entered .hero-visual::after {
+    opacity: 0;
+    transition: opacity 1.1s ease;
 }
 
 .hero.is-morph-complete .hero-visual-sides {
@@ -265,15 +362,11 @@
     animation: hero-side-reveal-right 1.16s cubic-bezier(0.18, 1, 0.32, 1) 0.08s forwards;
 }
 
-.hero.is-story-scrubbing .hero-visual {
-    transition: none;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, calc(0.16 - (0.06 * var(--hero-story-progress)))),
-        0 calc(38px - (22px * var(--hero-story-progress))) calc(110px - (64px * var(--hero-story-progress))) rgba(18, 15, 13, calc(0.28 - (0.17 * var(--hero-story-progress))));
-}
-
-.hero.is-story-scrubbing .hero-visual-side-left .hero-visual-copy,
-.hero.is-story-scrubbing .hero-visual-side-right .hero-visual-copy {
+/* Holding the copy still is what keeps the reveal animation suppressed. Dropping
+   the hold is what lets it restart, and that restart IS the snap — so it is gated
+   on the release point rather than on the scrub finishing. */
+.hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-left .hero-visual-copy,
+.hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-right .hero-visual-copy {
     animation: none;
     opacity: 1;
 }
@@ -286,11 +379,11 @@
     transform: translate(calc(var(--hero-story-progress) * var(--hero-side-cluster-shift) * -1), -50%);
 }
 
-.hero.is-story-scrubbing .hero-visual-side-left .hero-visual-copy {
+.hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-left .hero-visual-copy {
     transform: translate3d(calc(var(--hero-side-pull) * 36px), 0, 0) scale(var(--hero-side-scale));
 }
 
-.hero.is-story-scrubbing .hero-visual-side-right .hero-visual-copy {
+.hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-right .hero-visual-copy {
     transform: translate3d(calc(var(--hero-side-pull) * -36px), 0, 0) scale(var(--hero-side-scale));
 }
 
@@ -310,37 +403,6 @@
 .hero.is-story-complete .hero-visual-side-right .hero-visual-copy {
     opacity: 1;
     transform: translate3d(-36px, 0, 0) scale(0.84);
-}
-
-.hero-sentence {
-    position: absolute;
-    inset: 0;
-    z-index: 4;
-    pointer-events: none;
-    display: none;
-}
-
-.hero-sentence-copy {
-    position: absolute;
-    top: calc(50% + var(--hero-comma-shift-y));
-    color: #111111;
-    font-family: "Helvetica Neue", "Avenir Next", "SF Pro Display", Arial, sans-serif;
-    font-size: clamp(3.2rem, 6vw, 6.8rem);
-    font-weight: 200;
-    letter-spacing: -0.045em;
-    line-height: 0.92;
-    opacity: 0;
-    will-change: transform, opacity;
-}
-
-.hero-sentence-copy-left {
-    right: calc(50% + (var(--hero-comma-width) / 2) + 18px);
-    transform: translate3d(calc((1 - var(--hero-story-progress)) * 112px), -50%, 0) scale(calc(0.97 + (0.03 * var(--hero-story-progress))));
-}
-
-.hero-sentence-copy-right {
-    left: calc(50% + (var(--hero-comma-width) / 2) + 18px);
-    transform: translate3d(calc((1 - var(--hero-story-progress)) * -112px), -50%, 0) scale(calc(0.97 + (0.03 * var(--hero-story-progress))));
 }
 
 @keyframes hero-side-reveal-left {
@@ -387,70 +449,15 @@
     }
 }
 
-.title {
-    display: inline-flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 0.3em;
-    font-size: 72px;
-    font-weight: 300;
-    letter-spacing: 4px;
-    margin-bottom: 12px;
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-    transition: opacity 1.2s linear;
-}
-
-.title-logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.65em;
-    flex: 0 0 auto;
-}
-
-.title-logo-image {
-    display: block;
-    width: 100%;
-    height: auto;
-    filter: brightness(0) invert(1);
-}
-
-.title-word {
-    display: inline-block;
-    letter-spacing: 0.12em;
-    text-transform: lowercase;
-}
-
-.subtitle {
-    font-size: 28px;
-    margin-bottom: 20px;
-    opacity: 0;
-    transition: opacity 1.2s linear;
-}
-
-.content.is-intro-ready .title {
-    opacity: 1;
-}
-
-.content.is-intro-ready .subtitle {
-    opacity: 0.9;
-}
-
-.subtitle:hover,
-.subtitle:focus-visible {
-    opacity: 1;
-}
-
-.subtitle.is-scrambling,
 .description-copy.is-scrambling {
     font-variant-ligatures: none;
 }
 
 .description-wrapper {
-    width: min(720px, 100%);
+    /* wide enough that the only line break is the explicit one before "through" */
+    width: min(920px, 100%);
     overflow: hidden;
-    margin: 0 auto 30px;
+    margin: 0 auto 34px;
     opacity: 0;
     transform: none;
     transition: opacity 0.2s ease;
@@ -460,14 +467,22 @@
 .description-track {
     display: block;
     width: 100%;
+    -webkit-user-select: none;
+    user-select: none;
     font-family: "Helvetica Neue", "Avenir Next", "SF Pro Display", Arial, sans-serif;
-    font-size: 16px;
-    font-weight: 200;
-    line-height: 1.65;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(16px, 1.25vw, 20px);
+    font-weight: 300;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+    /* the studio name carries the weight, the rest of the sentence recedes */
+    color: rgba(255, 255, 255, 0.66);
     transition: color 0.5s ease;
+}
+
+.description-name {
+    color: rgba(255, 255, 255, 0.98);
+    font-weight: 500;
 }
 
 .description-copy {
@@ -508,7 +523,7 @@
 .form {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
     opacity: 0.02;
     transform: none;
@@ -528,13 +543,13 @@
 }
 
 .input {
-    padding: 10px 16px;
+    padding: 7px 14px;
     border-radius: 999px;
     border: none;
     outline: none;
     caret-color: #111111;
-    font-size: 14px;
-    width: 220px;
+    font-size: 13px;
+    width: 172px;
     transition: box-shadow 0.25s ease, opacity 0.25s ease;
 }
 
@@ -547,14 +562,14 @@
 }
 
 .btn {
-    padding: 10px 22px;
+    padding: 7px 18px;
     border-radius: 999px;
     border: none;
     background: rgba(255, 255, 255, 0.96);
     color: #8c7f84;
     cursor: pointer;
     font-family: "Helvetica Neue", "SF Pro Display", Arial, sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 300;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -569,10 +584,6 @@
 }
 
 @media (max-width: 768px) {
-    .title {
-        font-size: 42px;
-    }
-
     .hero {
         padding: 8px;
         --hero-card-width: min(74vw, 420px);
@@ -582,66 +593,18 @@
         --hero-comma-width: 11px;
         --hero-comma-height: 28px;
         --hero-comma-shift-y: 12px;
-    }
-
-    .overlay {
-        inset: 8px;
-        border-radius: 6px;
+        --hero-media-width: min(420px, calc(100% - 32px));
+        --hero-media-height: min(300px, 42vh);
     }
 
     .hero-visual {
-        width: calc(100% - 16px);
-        height: calc(100% - 16px);
         border-radius: 6px;
-        clip-path: inset(0 round 6px);
-        box-shadow: 0 16px 34px rgba(16, 14, 13, 0.12);
-        transition: none;
-    }
-
-    .hero-visual::before {
-        content: "";
-    }
-
-    .hero.is-entered .hero-visual {
-        width: 11px;
-        height: 28px;
-        border-radius: 0;
-        clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
-        transform: translate(-50%, -50%);
-        box-shadow: none;
-        opacity: 1;
-        background: #111111;
-    }
-
-    .hero.is-entered .overlay {
-        filter: none;
-        transform: none;
-        opacity: 0;
     }
 
     .hero.is-entered .content {
         filter: none;
         transform: translate(-50%, -50%);
         opacity: 0;
-    }
-
-    .hero.is-story-scrubbing .hero-visual,
-    .hero.is-story-complete .hero-visual,
-    .hero.is-comma-phase .hero-visual {
-        width: 11px;
-        height: 28px;
-        border-radius: 0;
-        clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
-        transform: translate(-50%, -50%);
-        box-shadow: none;
-        opacity: 1;
-        background: #111111;
-    }
-
-    .hero.is-story-scrubbing .hero-visual-copy,
-    .hero.is-story-complete .hero-visual-copy {
-        transform: none;
-        opacity: 1;
     }
 
     .hero.is-morph-complete .hero-visual-sides {
@@ -651,7 +614,6 @@
 
     .hero-visual-sides,
     .hero-visual-copy,
-    .overlay,
     .content {
         transition: none;
         animation: none;
@@ -671,11 +633,6 @@
         transform: translateY(-50%);
     }
 
-    .hero-sentence,
-    .hero-sentence-copy {
-        display: none;
-    }
-
     .hero-visual-side {
         max-width: none;
     }
@@ -683,19 +640,6 @@
     .hero-visual-copy {
         font-size: clamp(1.9rem, 8vw, 3.2rem);
         letter-spacing: -0.03em;
-    }
-
-    .hero-sentence-copy {
-        font-size: clamp(1.9rem, 8vw, 3.2rem);
-        letter-spacing: -0.03em;
-    }
-
-    .title-logo-mark {
-        width: 2.35em;
-    }
-
-    .subtitle {
-        font-size: 20px;
     }
 
     .description-track {
@@ -718,5 +662,41 @@
         padding: 8px 18px;
         font-size: 11px;
         letter-spacing: 0.18em;
+    }
+}
+
+/* Touch devices skip the scroll expansion: there is no wheel to scrub with, so
+   hero.js jumps the progress to 1 and the media starts where the scrub would
+   have ended. Keyed on pointer capability rather than width — a narrow desktop
+   window still gets the full effect. */
+@media (hover: none), (pointer: coarse) {
+    .hero {
+        --hero-media-width: calc(100% - 16px);
+        --hero-media-height: calc(100% - 16px);
+        --hero-media-zoom: 1;
+        --hero-word-travel: 0px;
+    }
+
+    .hero-visual {
+        clip-path: inset(0 round 6px);
+        box-shadow: 0 16px 34px rgba(16, 14, 13, 0.12);
+        transition: none;
+    }
+
+    /* entering goes straight to the comma, as it always did on touch */
+    .hero.is-entered .hero-visual {
+        width: 11px;
+        height: 28px;
+        border-radius: 0;
+        clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
+        transform: translate(-50%, -50%);
+        box-shadow: none;
+        opacity: 1;
+        background: #111111;
+        transition: none;
+    }
+
+    .hero-expand-hint {
+        display: none;
     }
 }

@@ -11,7 +11,7 @@
 
 .project-intro {
     position: relative;
-    width: calc(100% - (var(--project-edge-inset) * 2));
+    width: calc(100% - (var(--project-grid-inset) * 2));
     margin: 300px auto 34px;
     padding-bottom: 92px;
 }
@@ -349,13 +349,19 @@
 .project-grid {
     display: grid;
     grid-template-columns: repeat(var(--project-column-count), minmax(0, 1fr));
-    gap: 6px;
+    /* one value for both axes, so the space between cards is identical
+       horizontally and vertically */
+    gap: var(--project-grid-gutter);
     align-items: start;
+    /* same width and centring as .project-intro, so the heading, the filter
+       chips and the leftmost card all start on the same line */
+    width: calc(100% - (var(--project-grid-inset) * 2));
+    margin-inline: auto;
 }
 
 .project-empty-state {
     display: none;
-    width: calc(100% - (var(--project-edge-inset) * 2));
+    width: calc(100% - (var(--project-grid-inset) * 2));
     margin: 28px auto 0;
     color: #7d7770;
     font-size: 0.88rem;
@@ -370,8 +376,10 @@
 .project-card {
     position: relative;
     aspect-ratio: 1 / 1;
-    width: calc(var(--project-card-scale) * 100%);
-    margin: 0.75% auto;
+    /* the card fills its column: the gutter alone sets every gap, so nothing
+       can make the horizontal and vertical spacing drift apart */
+    width: 100%;
+    margin: 0;
     overflow: hidden;
     border-radius: 12px;
     background: #ddd;
@@ -529,7 +537,8 @@
 
 .project-grid.is-list-view {
     display: block;
-    width: calc(100% - (var(--project-edge-inset) * 2));
+    /* list rows start on the same line as the grid cards and the intro */
+    width: calc(100% - (var(--project-grid-inset) * 2));
     margin: 0 auto;
     padding-inline: 0;
 }

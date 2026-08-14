@@ -13,14 +13,15 @@
     overflow: hidden;
 }
 
-.contact-dot-field {
+.contact-ripple-field {
     position: absolute;
     inset: 0;
     z-index: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    opacity: 0.82;
+    /* dot alpha is painted per pass in the canvas, so the layer stays at full opacity */
+    opacity: 1;
 }
 
 .contact-shell {

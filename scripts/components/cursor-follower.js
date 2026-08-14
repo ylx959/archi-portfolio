@@ -1,6 +1,6 @@
-import { body } from "../core/dom.js?v=9";
-import { getCurrentSection } from "../core/sections.js?v=9";
-import { isEntered } from "../core/state.js?v=9";
+import { body } from "../core/dom.js?v=47";
+import { getCurrentSection } from "../core/sections.js?v=47";
+import { isEntered } from "../core/state.js?v=47";
 
 const cursorFollower = document.getElementById("cursorFollower");
 
@@ -34,8 +34,6 @@ function setupCursorFollower() {
         "canvas",
         ".hero-visual",
         ".hero-main-image",
-        ".title-logo-mark",
-        ".title-logo-image",
         ".section-floating-logo",
         ".section-floating-logo-image",
         ".project-image",
@@ -51,7 +49,6 @@ function setupCursorFollower() {
         "li",
         "span",
         "label",
-        ".title",
         ".subtitle",
         ".description-copy",
         ".nav-link",

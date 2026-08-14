@@ -1,9 +1,9 @@
-import { HERO_PHASES, defaultSubtitleText, reducedMotionQuery, descriptionRevealDelay, descriptionRevealDuration, heroIntroDelay } from "../core/constants.js?v=9";
-import { body, html } from "../core/dom.js?v=9";
-import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=9";
-import { getCurrentSection } from "../core/sections.js?v=9";
-import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=9";
-import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText } from "../core/utils.js?v=9";
+import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=47";
+import { body, html } from "../core/dom.js?v=47";
+import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=47";
+import { getCurrentSection } from "../core/sections.js?v=47";
+import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=47";
+import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=47";
 
 export const enterForm = document.getElementById("enterForm");
 
@@ -21,11 +21,9 @@ const heroMainImages = document.querySelectorAll(".hero-main-image");
 
 const heroEnteredName = document.getElementById("heroEnteredName");
 
-const heroSentenceName = document.getElementById("heroSentenceName");
+const heroExpandWordLeft = document.querySelector(".hero-expand-word-left");
 
-const title = document.querySelector(".title");
-
-export const subtitle = document.getElementById("subtitle");
+const heroExpandWordRight = document.querySelector(".hero-expand-word-right");
 
 export const heroState = {
     phase: HERO_PHASES.IDLE,
@@ -34,16 +32,35 @@ export const heroState = {
     isAwaitingAutoScroll: false
 };
 
-// Smoothing for the intro story scrub: `heroStoryTargetProgress` is where the
-// wheel has asked to be, `heroState.progress` is what is currently rendered.
-const heroStorySettings = {
+// The hero is scrubbed in two acts, each with its own eased track:
+//   act 1 (before entering) opens the collapsed card out to full screen,
+//   act 2 (after the name is submitted) shrinks it into the comma.
+// `target` is where the wheel has asked to be, `progress` is what is rendered,
+// `distance` is how much wheel delta one full act costs.
+const heroExpandTrack = {
+    progress: 0,
+    target: 0,
+    frame: null,
+    // low on purpose: the card keeps easing after the wheel stops, which is the
+    // whole point of scrubbing it rather than tracking the wheel one to one
+    lerp: 0.055,
+    distance: 1400,
+    settleDistance: 0.0015
+};
+
+const heroStoryTrack = {
+    progress: 0,
+    target: 0,
+    frame: null,
     lerp: 0.14,
     distance: 1120,
     settleDistance: 0.0015
 };
 
-let heroStoryTargetProgress = 0;
-let heroStoryFrame = null;
+// Where the squeeze bottoms out: past this the pull is capped, so holding the
+// copy any longer just looks stuck. This is the point the rubber band lets go —
+// deliberately before the comma has finished forming.
+const heroStoryReleaseProgress = 0.82;
 
 const heroTimers = {
     morph: null,
@@ -51,9 +68,26 @@ const heroTimers = {
     autoScroll: null
 };
 
-let hasPlayedFirstTypedAnimation = false;
+// The enter form only becomes usable once the media has finished expanding.
+let isHeroExpandComplete = false;
 
-let isDescriptionRevealComplete = false;
+// The card doubles as the loading screen: the wheel is dead until the intro
+// sequence has finished announcing itself.
+let isHeroIntroComplete = false;
+
+// Minimum time each intro line stays up. On a warm cache the image is ready
+// almost immediately, and a "Loading" that flashes past is worse than none.
+const heroIntroTiming = {
+    loadingHold: 620,
+    thanksHold: 1400,
+    imageTimeout: 9000
+};
+
+// Whether the hero runs its scrubbed version. Width alone is the wrong test: a
+// 900px desktop window has a wheel, a phone held sideways does not.
+function isHeroTouchMode() {
+    return coarsePointerQuery.matches || window.innerWidth <= 480;
+}
 
 function updateButtonState() {
     if (!nameInput || !enterButton) {
@@ -63,12 +97,157 @@ function updateButtonState() {
     enterButton.disabled = isEntered() || nameInput.value.trim() === "";
 }
 
-function markDescriptionRevealComplete() {
-    isDescriptionRevealComplete = true;
+// End of act one: the media fills the hero, so the copy and enter form come out.
+function completeHeroExpand() {
+    if (isHeroExpandComplete) {
+        return;
+    }
+
+    isHeroExpandComplete = true;
+    writeExpandProgress(1);
+    heroExpandTrack.target = 1;
+
+    if (hero) {
+        hero.classList.add("is-expanded");
+    }
+
+    if (heroContent) {
+        heroContent.classList.add("is-intro-ready");
+    }
 
     if (enterForm) {
         enterForm.classList.add("is-visible");
     }
+
+    triggerHeroTextScramble();
+    updateButtonState();
+}
+
+// End of act two: the comma has settled, so hand the page over to the work.
+function completeHeroStory() {
+    const projectsSection = document.getElementById("projects");
+
+    if (!projectsSection) {
+        return;
+    }
+
+    clearHeroStoryCompletionTimer();
+    heroState.isAwaitingAutoScroll = true;
+    scheduleHeroTimer("autoScroll", 1300, function () {
+        smoothScrollToSection(projectsSection);
+    });
+}
+
+function delay(duration) {
+    return new Promise(function (resolve) {
+        window.setTimeout(resolve, duration);
+    });
+}
+
+function setHeroTitleWord(element, text, duration, characters) {
+    if (!element) {
+        return;
+    }
+
+    if (!text) {
+        element.textContent = "";
+        return;
+    }
+
+    if (reducedMotionQuery.matches) {
+        element.textContent = text;
+        return;
+    }
+
+    scrambleHeroText(element, text, {
+        duration: duration,
+        speed: 0.045,
+        characters: characters
+    });
+}
+
+// Scramble a line in; resolves once it has finished resolving.
+function scrambleLineIn(leftText, rightText, duration, characters) {
+    setHeroTitleWord(heroExpandWordLeft, leftText, duration, characters);
+    setHeroTitleWord(heroExpandWordRight, rightText, duration, characters);
+
+    return delay(reducedMotionQuery.matches ? 0 : (duration * 1000) + 140);
+}
+
+// Dissolve whatever is on screen back to nothing, so the next line arrives from
+// empty instead of being swapped in place.
+function scrambleLineOut(duration) {
+    if (reducedMotionQuery.matches) {
+        setHeroTitleWord(heroExpandWordLeft, "", 0);
+        setHeroTitleWord(heroExpandWordRight, "", 0);
+        return delay(0);
+    }
+
+    scrambleHeroTextOut(heroExpandWordLeft, { duration: duration, speed: 0.04, characters: heroScrambleLowercase });
+    scrambleHeroTextOut(heroExpandWordRight, { duration: duration, speed: 0.04, characters: heroScrambleLowercase });
+
+    return delay((duration * 1000) + 120);
+}
+
+// Loading -> Thanks for waiting -> Architecture & Design, with the line
+// dissolving back to nothing between each one. The wheel stays dead throughout,
+// so nobody scrolls past a card that has no picture in it yet.
+function startHeroIntroSequence() {
+    if (!hero) {
+        return;
+    }
+
+    hero.classList.add("is-intro-loading");
+
+    let isImageReady = false;
+
+    Promise.race([
+        preloadHeroMainImage(),
+        delay(heroIntroTiming.imageTimeout)
+    ]).then(function () {
+        isImageReady = true;
+    });
+
+    // Keep pulsing the loading line for as long as the download takes. Each pass
+    // is a full in-and-out, so a slow connection looks alive rather than stuck.
+    function loadingCycle() {
+        return scrambleLineIn("loading...", "", 0.85, heroScrambleLowercase)
+            .then(function () {
+                return delay(heroIntroTiming.loadingHold);
+            })
+            .then(function () {
+                return scrambleLineOut(0.55);
+            })
+            .then(function () {
+                if (!isImageReady) {
+                    return loadingCycle();
+                }
+
+                return null;
+            });
+    }
+
+    loadingCycle()
+        .then(function () {
+            return scrambleLineIn("thanks for waiting - all set.", "", 1.05, heroScrambleLowercase);
+        })
+        .then(function () {
+            return delay(heroIntroTiming.thanksHold);
+        })
+        .then(function () {
+            return scrambleLineOut(0.6);
+        })
+        .then(function () {
+            // The headline is set differently from the status lines, and the
+            // switch happens while the line is empty so nothing jumps size.
+            hero.classList.add("is-intro-headline");
+            return scrambleLineIn("Architecture", "& Design", 1.15);
+        })
+        .then(function () {
+            isHeroIntroComplete = true;
+            hero.classList.remove("is-intro-loading");
+            syncHeroExpandMode();
+        });
 }
 
 function revealHeroMainImage() {
@@ -83,19 +262,21 @@ function revealHeroMainImage() {
     });
 }
 
+// Resolves once every hero image has decoded and been revealed. A failed image
+// resolves too — a broken asset must not hold the intro hostage.
 function preloadHeroMainImage() {
     if (!hero) {
-        return;
+        return Promise.resolve();
     }
 
     const images = Array.from(heroMainImages);
 
     if (!images.length) {
         revealHeroMainImage();
-        return;
+        return Promise.resolve();
     }
 
-    Promise.all(images.map(function (image) {
+    return Promise.all(images.map(function (image) {
         return new Promise(function (resolve, reject) {
             function decodeImage() {
                 if (image.decode) {
@@ -119,53 +300,35 @@ function preloadHeroMainImage() {
     });
 }
 
-function setupSubtitleScrambleAnimation() {
-    if (!subtitle || subtitle.hasAttribute("data-scramble-ready")) {
-        return;
-    }
-
-    const subtitleText = defaultSubtitleText;
-    subtitle.setAttribute("data-scramble-ready", "true");
-    subtitle.setAttribute("aria-label", subtitleText);
-    subtitle.textContent = subtitleText;
-
-}
-
+// Only the tail of the sentence scrambles. The studio name is a separate span
+// carrying its own weight, and scrambleHeroText writes textContent, which would
+// flatten that markup away.
 function setupDescriptionScrambleAnimation() {
-    const descriptionCopies = document.querySelectorAll(".description-copy");
-
-    descriptionCopies.forEach(function (copy) {
-        if (copy.hasAttribute("data-scramble-ready")) {
+    document.querySelectorAll(".description-tail").forEach(function (tail) {
+        if (tail.hasAttribute("data-scramble-ready")) {
             return;
         }
 
-        const descriptionText = copy.textContent.trim();
-        copy.setAttribute("data-scramble-ready", "true");
-        copy.setAttribute("aria-label", descriptionText);
-        copy.textContent = descriptionText;
+        const descriptionText = tail.textContent.trim();
+        tail.setAttribute("data-scramble-ready", "true");
+        tail.setAttribute("aria-label", descriptionText);
+        tail.textContent = descriptionText;
     });
 }
 
 function triggerHeroTextScramble() {
-    const descriptionCopy = document.querySelector(".description-copy:not([aria-hidden='true'])");
-
-    if (subtitle) {
-        scrambleHeroText(subtitle, defaultSubtitleText, {
-            duration: 2.2,
-            speed: 0.055
-        });
-    }
-
-    if (descriptionCopy) {
-        scrambleHeroText(descriptionCopy, descriptionCopy.getAttribute("aria-label") || descriptionCopy.textContent.trim(), {
+    // The sentence is split across explicit lines, so each line scrambles on its own.
+    document.querySelectorAll(".description-copy:not([aria-hidden='true']) .description-tail").forEach(function (tail) {
+        scrambleHeroText(tail, tail.getAttribute("aria-label") || tail.textContent.trim(), {
             duration: 2.6,
             speed: 0.055
         });
-    }
+    });
 }
 
+// Mirrors what is being typed into the greeting that plays after entering.
 function updateSubtitle() {
-    if (!nameInput || !subtitle) {
+    if (!nameInput) {
         return;
     }
 
@@ -177,22 +340,10 @@ function updateSubtitle() {
     }
 
     const enteredName = formatDisplayName(nameInput.value).trim();
-    const subtitleText = defaultSubtitleText;
-    const heroNameText = enteredName === "" ? "Guest" : enteredName;
-
-    if (!hasPlayedFirstTypedAnimation) {
-        setupSubtitleScrambleAnimation();
-        hasPlayedFirstTypedAnimation = true;
-    }
 
     if (heroEnteredName) {
-        heroEnteredName.textContent = heroNameText;
+        heroEnteredName.textContent = enteredName === "" ? "Guest" : enteredName;
     }
-
-    if (heroSentenceName) {
-        heroSentenceName.textContent = heroNameText;
-    }
-
 }
 
 function resetMobileHeroViewport() {
@@ -264,11 +415,16 @@ function syncHeroPhaseClasses() {
         return;
     }
 
-    hero.classList.toggle("is-entered", heroState.phase !== HERO_PHASES.IDLE);
-    hero.classList.toggle("is-morph-complete", heroState.phase !== HERO_PHASES.IDLE && heroState.phase !== HERO_PHASES.ENTERING);
-    hero.classList.toggle("is-story-scrubbing", heroState.phase === HERO_PHASES.SCRUBBING);
-    hero.classList.toggle("is-story-complete", heroState.phase === HERO_PHASES.COMPLETE);
-    hero.classList.toggle("is-comma-phase", heroState.progress >= 0.94);
+    // IDLE / SCRUBBING / COMPLETE are act one, the expansion. ENTERING / MORPHED
+    // are act two, which only starts once a name has been submitted.
+    const isAfterEnter = heroState.phase === HERO_PHASES.ENTERING || heroState.phase === HERO_PHASES.MORPHED;
+
+    hero.classList.toggle("is-entered", isAfterEnter);
+    hero.classList.toggle("is-morph-complete", heroState.phase === HERO_PHASES.MORPHED);
+    hero.classList.toggle("is-story-scrubbing", isAfterEnter && heroStoryTrack.progress > 0 && heroStoryTrack.progress < 1);
+    hero.classList.toggle("is-story-released", isAfterEnter && heroStoryTrack.progress >= heroStoryReleaseProgress);
+    hero.classList.toggle("is-story-complete", isAfterEnter && heroStoryTrack.progress >= 1);
+    hero.classList.toggle("is-comma-phase", isAfterEnter && heroStoryTrack.progress >= 0.94);
 }
 
 function setHeroPhase(phase) {
@@ -277,120 +433,154 @@ function setHeroPhase(phase) {
 }
 
 function resetHeroFlowState() {
-    cancelHeroStoryScrub();
-    heroState.progress = 0;
-    heroStoryTargetProgress = 0;
-    heroState.isStoryUnlocked = false;
+    cancelHeroScrub(heroExpandTrack);
+    cancelHeroScrub(heroStoryTrack);
     heroState.isAwaitingAutoScroll = false;
     clearHeroMorphTimer();
     clearHeroStoryUnlockTimer();
     clearHeroStoryCompletionTimer();
-
-    if (hero) {
-        hero.style.setProperty("--hero-story-progress", "0.0000");
-        hero.style.setProperty("--hero-side-pull", "0.0000");
-        hero.style.setProperty("--hero-side-scale", "1.0000");
-    }
-
-    setHeroPhase(HERO_PHASES.IDLE);
 }
 
+// Held still whenever the wheel has nothing left to scrub but the page should
+// not move yet: waiting on the name, or waiting on act two to be released.
 export function isHeroScrollLocked() {
-    if (isMobileHeroMode()) {
+    if (isHeroTouchMode()) {
         return false;
     }
 
-    return !!(hero &&
-        isEntered() &&
-        heroState.phase !== HERO_PHASES.IDLE &&
-        window.scrollY <= 6 &&
-        (!heroState.isStoryUnlocked || heroState.isAwaitingAutoScroll));
+    if (!hero) {
+        return false;
+    }
+
+    if (!isEntered()) {
+        return !isHeroStoryActive();
+    }
+
+    return window.scrollY <= 6 && (!heroState.isStoryUnlocked || heroState.isAwaitingAutoScroll);
 }
 
-function setHeroStoryProgress(progress) {
+function writeExpandProgress(progress) {
     if (!hero) {
         return;
     }
 
-    heroState.progress = Math.max(0, Math.min(progress, 1));
+    heroExpandTrack.progress = Math.max(0, Math.min(progress, 1));
+    heroState.progress = heroExpandTrack.progress;
+    hero.style.setProperty("--hero-expand-progress", heroExpandTrack.progress.toFixed(4));
 
-    if (isMobileHeroMode()) {
-        hero.style.setProperty("--hero-story-progress", "0.0000");
-        hero.style.setProperty("--hero-side-pull", "0.0000");
-        hero.style.setProperty("--hero-side-scale", "1.0000");
-        setHeroPhase(HERO_PHASES.MORPHED);
-        clearHeroStoryCompletionTimer();
+    if (isEntered()) {
         return;
     }
 
-    const basePull = heroState.progress;
-    const magneticOvershoot = heroState.progress >= 0.64
-        ? easeOutBack((heroState.progress - 0.5) / 0.5, 2.8)
+    setHeroPhase(heroExpandTrack.progress >= 1
+        ? HERO_PHASES.COMPLETE
+        : (heroExpandTrack.progress > 0 ? HERO_PHASES.SCRUBBING : HERO_PHASES.IDLE));
+}
+
+function writeStoryProgress(progress) {
+    if (!hero) {
+        return;
+    }
+
+    heroStoryTrack.progress = Math.max(0, Math.min(progress, 1));
+
+    const basePull = heroStoryTrack.progress;
+    const magneticOvershoot = heroStoryTrack.progress >= 0.64
+        ? easeOutBack((heroStoryTrack.progress - 0.5) / 0.5, 2.8)
         : 0;
     const magneticPull = Math.min(basePull + (magneticOvershoot * 0.36), 1.38);
     const magneticScale = 1 - (Math.min(magneticPull, 1.24) * 0.22);
 
-    hero.style.setProperty("--hero-story-progress", heroState.progress.toFixed(4));
+    hero.style.setProperty("--hero-story-progress", heroStoryTrack.progress.toFixed(4));
     hero.style.setProperty("--hero-side-pull", magneticPull.toFixed(4));
     hero.style.setProperty("--hero-side-scale", magneticScale.toFixed(4));
-    setHeroPhase(heroState.progress >= 1 ? HERO_PHASES.COMPLETE : (heroState.progress > 0 ? HERO_PHASES.SCRUBBING : HERO_PHASES.MORPHED));
+    syncHeroPhaseClasses();
 
-    if (heroState.progress < 1) {
+    if (heroStoryTrack.progress < 1) {
         clearHeroStoryCompletionTimer();
     }
 }
 
+// Act one before entering, act two after — whichever is live owns the wheel.
 export function isHeroStoryActive() {
-    if (isMobileHeroMode()) {
+    if (isHeroTouchMode() || reducedMotionQuery.matches) {
         return false;
     }
 
-    if (!hero || !isEntered() || heroState.phase === HERO_PHASES.IDLE || heroState.phase === HERO_PHASES.ENTERING || !heroState.isStoryUnlocked) {
+    if (!hero) {
         return false;
     }
 
-    return window.scrollY <= 6 && getCurrentSection() && getCurrentSection().id === "home";
-}
+    const isAtHeroTop = window.scrollY <= 6 && getCurrentSection() && getCurrentSection().id === "home";
 
-function completeHeroStory() {
-    const projectsSection = document.getElementById("projects");
-
-    if (!projectsSection) {
-        return;
+    if (!isAtHeroTop) {
+        return false;
     }
 
-    clearHeroStoryCompletionTimer();
-    heroState.isAwaitingAutoScroll = true;
-    scheduleHeroTimer("autoScroll", 1300, function () {
-        smoothScrollToSection(projectsSection);
-    });
+    if (!isEntered()) {
+        return isHeroIntroComplete && !isHeroExpandComplete;
+    }
+
+    return heroState.isStoryUnlocked;
 }
 
-function stepHeroStory() {
-    const distance = heroStoryTargetProgress - heroState.progress;
+function getActiveHeroTrack() {
+    return isEntered() ? heroStoryTrack : heroExpandTrack;
+}
 
-    if (Math.abs(distance) <= heroStorySettings.settleDistance) {
-        heroStoryFrame = null;
-        setHeroStoryProgress(heroStoryTargetProgress);
+function stepHeroTrack(track, write, onComplete, now) {
+    const distance = track.target - track.progress;
 
-        if (heroState.progress >= 1) {
-            completeHeroStory();
+    if (Math.abs(distance) <= track.settleDistance) {
+        track.frame = null;
+        track.lastFrame = 0;
+        write(track.target);
+
+        if (track.progress >= 1) {
+            onComplete();
         }
 
         return;
     }
 
-    setHeroStoryProgress(heroState.progress + (distance * heroStorySettings.lerp));
-    heroStoryFrame = window.requestAnimationFrame(stepHeroStory);
+    // `lerp` is written as a per-60Hz-frame fraction, so convert it for however
+    // long this frame actually was. Without this the scrub runs at double speed
+    // on a 120Hz display and stutters whenever a frame is late.
+    const elapsed = track.lastFrame ? Math.min(64, now - track.lastFrame) : 16.667;
+    const factor = 1 - Math.pow(1 - track.lerp, Math.max(elapsed, 1) / 16.667);
+
+    track.lastFrame = now;
+    write(track.progress + (distance * factor));
+    track.frame = window.requestAnimationFrame(function (nextNow) {
+        stepHeroTrack(track, write, onComplete, nextNow);
+    });
 }
 
-function cancelHeroStoryScrub() {
-    if (heroStoryFrame) {
-        window.cancelAnimationFrame(heroStoryFrame);
-        heroStoryFrame = null;
+function startHeroTrack(track) {
+    if (track.frame) {
+        return;
     }
 
-    heroStoryTargetProgress = heroState.progress;
+    const isStory = track === heroStoryTrack;
+
+    track.lastFrame = 0;
+    track.frame = window.requestAnimationFrame(function (now) {
+        stepHeroTrack(
+            track,
+            isStory ? writeStoryProgress : writeExpandProgress,
+            isStory ? completeHeroStory : completeHeroExpand,
+            now
+        );
+    });
+}
+
+function cancelHeroScrub(track) {
+    if (track.frame) {
+        window.cancelAnimationFrame(track.frame);
+        track.frame = null;
+    }
+
+    track.target = track.progress;
 }
 
 // The wheel delivers coarse, uneven steps, so the raw delta only moves a target
@@ -400,40 +590,22 @@ export function scrubHeroStory(delta) {
         return false;
     }
 
-    if (reducedMotionQuery.matches) {
-        const nextProgress = heroState.progress + (delta / 1120);
-
-        if ((delta > 0 && heroState.progress < 1) || (delta < 0 && heroState.progress > 0)) {
-            setHeroStoryProgress(nextProgress);
-            heroStoryTargetProgress = heroState.progress;
-
-            if (heroState.progress >= 1) {
-                completeHeroStory();
-            }
-
-            return true;
-        }
-
-        return false;
-    }
+    const track = getActiveHeroTrack();
 
     // While the eased progress is still catching up to the target the wheel stays
     // captured, otherwise the page would start scrolling underneath an animation
     // that has not finished playing.
-    const isSettling = heroStoryFrame !== null;
+    const isSettling = track.frame !== null;
     const isConsumed = isSettling ||
-        (delta > 0 && heroStoryTargetProgress < 1) ||
-        (delta < 0 && heroStoryTargetProgress > 0);
+        (delta > 0 && track.target < 1) ||
+        (delta < 0 && track.target > 0);
 
     if (!isConsumed) {
         return false;
     }
 
-    heroStoryTargetProgress = Math.max(0, Math.min(heroStoryTargetProgress + (delta / heroStorySettings.distance), 1));
-
-    if (!heroStoryFrame) {
-        heroStoryFrame = window.requestAnimationFrame(stepHeroStory);
-    }
+    track.target = Math.max(0, Math.min(track.target + (delta / track.distance), 1));
+    startHeroTrack(track);
 
     return true;
 }
@@ -482,20 +654,19 @@ function submitEnterForm() {
         return;
     }
 
-    if (!isDescriptionRevealComplete) {
+    // Nothing can be submitted before the media has finished expanding — the
+    // form is not even reachable until then.
+    if (!isHeroExpandComplete) {
         return;
     }
 
     if (heroEnteredName) {
         heroEnteredName.textContent = enteredName;
     }
-    if (heroSentenceName) {
-        heroSentenceName.textContent = enteredName;
-    }
     lockEnterForm(enteredName);
     unlockPage(enteredName);
 
-    if (isMobileHeroMode()) {
+    if (isHeroTouchMode()) {
         setHeroPhase(HERO_PHASES.MORPHED);
         heroState.isStoryUnlocked = true;
         heroState.isAwaitingAutoScroll = true;
@@ -509,6 +680,8 @@ function submitEnterForm() {
         return;
     }
 
+    // Act two: the copy clears out, "Hello / <name>" arrives, and once it has
+    // settled the wheel is handed the comma morph.
     setHeroPhase(HERO_PHASES.ENTERING);
 
     scheduleHeroTimer("morph", 2140, function () {
@@ -520,22 +693,29 @@ function submitEnterForm() {
     });
 }
 
+// Touch, narrow screens and reduced-motion users never scrub: the media starts
+// where the expansion would have ended.
+function shouldSkipHeroExpand() {
+    return isHeroTouchMode() || reducedMotionQuery.matches;
+}
+
+function syncHeroExpandMode() {
+    if (isHeroExpandComplete || !shouldSkipHeroExpand()) {
+        return;
+    }
+
+    completeHeroExpand();
+}
+
 export function initHero() {
     html.classList.add("is-locked");
     body.classList.add("is-locked");
-    setupSubtitleScrambleAnimation();
     setupDescriptionScrambleAnimation();
-    preloadHeroMainImage();
     updateButtonState();
     updateSubtitle();
-    window.setTimeout(function () {
-        if (heroContent) {
-            heroContent.classList.add("is-intro-ready");
-        }
-
-        triggerHeroTextScramble();
-    }, heroIntroDelay);
-    window.setTimeout(markDescriptionRevealComplete, descriptionRevealDelay + descriptionRevealDuration + 2000);
+    writeExpandProgress(0);
+    writeStoryProgress(0);
+    startHeroIntroSequence();
     if (nameInput) {
         nameInput.addEventListener("input", function () {
             updateButtonState();
@@ -561,6 +741,7 @@ export function initHero() {
     onScrollSettle(function () {
         heroState.isAwaitingAutoScroll = false;
     });
+    window.addEventListener("resize", syncHeroExpandMode);
     setScrollGate({
         isLocked: isHeroScrollLocked,
         isStoryActive: isHeroStoryActive,

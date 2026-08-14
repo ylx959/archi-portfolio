@@ -561,6 +561,8 @@
 }
 
 .drawings-detail-overlay {
+    /* shell and image share one height budget — they must not drift apart */
+    --drawings-detail-max-height: min(78vh, 720px);
     position: fixed;
     inset: 0;
     z-index: 31;
@@ -595,8 +597,8 @@
 .drawings-detail-shell {
     position: relative;
     z-index: 1;
-    width: min(96vw, 1040px);
-    max-height: min(94vh, 980px);
+    width: min(78vw, 720px);
+    max-height: var(--drawings-detail-max-height);
     border-radius: 14px;
     opacity: 0;
     transform: translateY(20px);
@@ -617,11 +619,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 56px;
-    min-height: 46px;
-    padding: 0 18px;
+    min-width: 48px;
+    min-height: 40px;
+    padding: 0 15px;
     border: none;
-    border-radius: 12px;
+    border-radius: 11px;
     background: #f0efec;
     color: #141311;
     line-height: 1;
@@ -641,7 +643,7 @@
 
 .drawings-detail-close-glyph {
     display: inline-block;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     line-height: 1;
     transition: color 0.22s ease;
 }
@@ -654,7 +656,7 @@
 .drawings-detail-image {
     display: block;
     width: 100%;
-    max-height: min(94vh, 980px);
+    max-height: var(--drawings-detail-max-height);
     object-fit: contain;
     border-radius: 10px;
     background: #ffffff;
@@ -698,6 +700,7 @@ body.is-project-detail-open .project-showcase {
     }
 
     .drawings-detail-overlay {
+        --drawings-detail-max-height: min(86vh, 720px);
         padding: 12px;
     }
 
@@ -708,9 +711,9 @@ body.is-project-detail-open .project-showcase {
     .drawings-detail-close {
         top: 10px;
         left: 10px;
-        min-width: 48px;
-        min-height: 42px;
-        padding: 0 14px;
+        min-width: 44px;
+        min-height: 38px;
+        padding: 0 13px;
     }
 
     .project-detail-shell {

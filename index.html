@@ -12,37 +12,36 @@
             background: #ffffff;
         }
 
+        /* Keeps the main image from flashing in before it has decoded. Only
+           opacity: adding visibility here left the reveal transition stuck at 0,
+           because the element flips out of `hidden` in the same frame. */
         .hero .hero-main-image {
             opacity: 0;
-            visibility: hidden;
-        }
-
-        .hero.is-main-image-ready .hero-main-image-overlay,
-        .hero.is-main-image-ready .hero-main-image-visual {
-            visibility: visible;
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Roboto+Flex:wdth,wght@25..151,100..1000&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles/base.css?v=7">
-    <link rel="stylesheet" href="styles/components/hero.css?v=7">
-    <link rel="stylesheet" href="styles/components/floating-nav.css?v=7">
-    <link rel="stylesheet" href="styles/components/project-grid.css?v=7">
-    <link rel="stylesheet" href="styles/components/project-detail.css?v=7">
-    <link rel="stylesheet" href="styles/components/drawings.css?v=7">
-    <link rel="stylesheet" href="styles/components/about.css?v=7">
-    <link rel="stylesheet" href="styles/components/contact.css?v=7">
-    <link rel="stylesheet" href="styles/components/cursor-follower.css?v=7">
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@100..900&family=Roboto+Flex:wdth,wght@25..151,100..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/base.css?v=45">
+    <link rel="stylesheet" href="styles/components/hero.css?v=45">
+    <link rel="stylesheet" href="styles/components/floating-nav.css?v=45">
+    <link rel="stylesheet" href="styles/components/project-grid.css?v=45">
+    <link rel="stylesheet" href="styles/components/project-detail.css?v=45">
+    <link rel="stylesheet" href="styles/components/drawings.css?v=45">
+    <link rel="stylesheet" href="styles/components/about.css?v=45">
+    <link rel="stylesheet" href="styles/components/contact.css?v=45">
+    <link rel="stylesheet" href="styles/components/cursor-follower.css?v=45">
 </head>
 <body>
     <header class="hero" id="home">
-        <div class="overlay">
-            <img class="hero-main-image hero-main-image-overlay" src="assets/images/main/main.jpg" alt="" loading="eager" decoding="async" fetchpriority="high">
-        </div>
         <div class="hero-visual" id="heroVisual" aria-hidden="true">
-            <img class="hero-main-image hero-main-image-visual" src="assets/images/main/main.jpg" alt="" loading="eager" decoding="async" fetchpriority="high">
+            <img class="hero-main-image hero-main-image-visual" src="assets/images/main/main.jpg?v=2" alt="" loading="eager" decoding="async" fetchpriority="high">
         </div>
+        <p class="hero-expand-title" id="heroExpandTitle" aria-hidden="true">
+            <span class="hero-expand-word hero-expand-word-left">Architecture</span>
+            <span class="hero-expand-word hero-expand-word-right">&amp; Design</span>
+        </p>
+        <span class="hero-expand-hint" id="heroExpandHint" aria-hidden="true">Scroll</span>
         <div class="hero-visual-sides" aria-hidden="true">
             <div class="hero-visual-side hero-visual-side-left">
                 <span class="hero-visual-copy">Hello</span>
@@ -51,24 +50,11 @@
                 <span class="hero-visual-copy" id="heroEnteredName">Guest</span>
             </div>
         </div>
-        <div class="hero-sentence" aria-hidden="true">
-            <span class="hero-sentence-copy hero-sentence-copy-left">Hello</span>
-            <span class="hero-sentence-copy hero-sentence-copy-right" id="heroSentenceName">Guest</span>
-        </div>
-
         <div class="content">
-            <h1 class="title" data-static-title="true" aria-label="YLX studio">
-                <span class="title-logo-mark" aria-hidden="true">
-                    <img class="title-logo-image" src="assets/icons/contact-logo.svg" alt="">
-                </span>
-                <span class="title-word">studio</span>
-            </h1>
-            <p class="subtitle" id="subtitle" aria-live="polite">welcome to my portfolio.</p>
-
             <div class="description-wrapper">
                 <div class="description-track">
-                    <span class="description-copy">YLX studio is a collective exploring aesthetics, projects, and design through a multidisciplinary approach.</span>
-                    <span class="description-copy" aria-hidden="true">YLX studio is a collective exploring aesthetics, projects, and design through a multidisciplinary approach.</span>
+                    <span class="description-copy"><span class="description-name">YLX Studio</span> <span class="description-tail">— a collective exploring aesthetics, projects, and design</span><br><span class="description-tail">through a multidisciplinary approach</span></span>
+                    <span class="description-copy" aria-hidden="true"><span class="description-name">YLX Studio</span> <span class="description-tail">— a collective exploring aesthetics, projects, and design</span><br><span class="description-tail">through a multidisciplinary approach</span></span>
                 </div>
             </div>
 
@@ -396,11 +382,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="about-support-link about-support-link-standalone">
-                        <span class="about-support-link-note">hahaha I&apos;m just kidding</span>
-                        <span class="about-support-link-text">Buy Me a Coffee</span>
-                    </div>
                 </div>
 
                 <div class="about-right">
@@ -424,7 +405,7 @@
         </div>
     </section>
     <section class="contact-section" id="contact">
-        <canvas class="contact-dot-field" id="contactDotField" aria-hidden="true"></canvas>
+        <canvas class="contact-ripple-field" id="contactRippleField" aria-hidden="true"></canvas>
         <div class="contact-shell">
             <div class="contact-layout">
                 <div class="contact-brand">
@@ -529,7 +510,7 @@
         </div>
     </div>
 
-    <script src="scripts/mineport-project-data.js?v=35"></script>
-    <script type="module" src="scripts/main.js?v=9"></script>
+    <script src="scripts/mineport-project-data.js?v=73"></script>
+    <script type="module" src="scripts/main.js?v=47"></script>
 </body>
 </html>

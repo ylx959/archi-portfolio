@@ -9,6 +9,11 @@
     --project-card-scale: 0.985;
     --project-column-count: 3;
     --project-edge-inset: calc((100% / var(--project-column-count)) * ((1 - var(--project-card-scale)) / 2));
+    /* Outer breathing room and inter-card spacing for the project section. The
+       intro, the grid and the list view all key off --project-grid-inset, so the
+       heading, the filter chips and the leftmost card share one left edge. */
+    --project-grid-inset: clamp(10px, 2.6vw, 48px);
+    --project-grid-gutter: 22px;
     --stack-section-overlap: 34vh;
     --contact-section-overlap: 18vh;
     --filter-panel-open-duration: 0.42s;
@@ -65,6 +70,8 @@ a {
 @media (max-width: 1080px) {
     :root {
         --project-column-count: 2;
+        --project-grid-inset: clamp(8px, 2vw, 28px);
+        --project-grid-gutter: 18px;
     }
 }
 
@@ -72,6 +79,8 @@ a {
     :root {
         --project-shell-padding: 16px;
         --project-column-count: 1;
+        --project-grid-inset: 2px;
+        --project-grid-gutter: 14px;
         --stack-section-overlap: 18vh;
         --contact-section-overlap: 10vh;
     }
