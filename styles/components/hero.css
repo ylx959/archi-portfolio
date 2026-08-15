@@ -1,7 +1,13 @@
 .hero {
     position: relative;
     width: 100%;
+    /* dvh, not vh: on a mobile browser 100vh is the viewport with the URL bar
+       *hidden*, so while it is showing — or while the keyboard is up — the hero
+       is taller than what can actually be seen. That is what pushed the dropped
+       card past the bottom edge, and what left a band of white under the hero
+       that could be scrolled into. The vh line is the fallback. */
     height: 100vh;
+    height: 100dvh;
     padding: 12px;
     overflow: clip;
     background: var(--paper);
@@ -15,7 +21,7 @@
     --hero-expand-progress: 0;
     /* landscape at rest, roughly the aspect of main.jpg so `cover` barely crops */
     --hero-media-width: min(500px, 62vw);
-    --hero-media-height: min(370px, 50vh);
+    --hero-media-height: min(370px, 50dvh);
     /* How far the picture is zoomed in while the card is collapsed. The frame
        grows and the picture shrinks at the same time: content starts large and
        pulls back to its full self as the card takes over the screen. */

@@ -461,8 +461,18 @@ function updateSubtitle() {
     }
 }
 
+// Anything with a virtual keyboard, which is not the same question as "is this
+// a phone". isMobileHeroMode() is a width test tied to the 768px stylesheet
+// breakpoint and is also used by project-detail.js for layout, so it cannot be
+// widened — a tablet has a keyboard but desktop-width layout, and was falling
+// through this reset entirely: the page stayed where the keyboard had scrolled
+// it, leaving a band of white below the hero to scroll straight into.
+function hasVirtualKeyboard() {
+    return coarsePointerQuery.matches || isMobileHeroMode();
+}
+
 function resetMobileHeroViewport() {
-    if (!isMobileHeroMode()) {
+    if (!hasVirtualKeyboard()) {
         return;
     }
 
@@ -828,7 +838,7 @@ export function initHero() {
         });
 
         nameInput.addEventListener("keydown", function (event) {
-            if (event.key !== "Enter" || event.isComposing || !isMobileHeroMode()) {
+            if (event.key !== "Enter" || event.isComposing || !hasVirtualKeyboard()) {
                 return;
             }
 
