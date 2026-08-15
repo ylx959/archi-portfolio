@@ -811,3 +811,27 @@
         display: none;
     }
 }
+
+/* Touch tablets: coarse pointer, but wider than the phone block below reaches.
+   They take the touch media size (`100% - 24px`), and the desktop side copy is
+   positioned against that card width — `right: calc(50% + cardWidth/2 + gap)`
+   resolves past 100%, so the box collapses to a negative width and the copy
+   overflows off the left of the screen. Position against the centre instead, the
+   way the phone block already does, and give the convergence values room to
+   match: cluster + pull must stay well inside the gap they are closing. */
+@media (hover: none) and (min-width: 769px), (pointer: coarse) and (min-width: 769px) {
+    .hero {
+        --hero-side-cluster-shift: 14px;
+        --hero-side-pull-distance: 8px;
+    }
+
+    .hero-visual-side-left {
+        left: var(--hero-copy-edge-padding);
+        right: calc(50% + 40px);
+    }
+
+    .hero-visual-side-right {
+        left: calc(50% + 40px);
+        right: var(--hero-copy-edge-padding);
+    }
+}

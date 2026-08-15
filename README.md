@@ -2,7 +2,7 @@
 
 An interactive architecture and design portfolio for YLX Studio, built around immersive motion, scroll-based storytelling, project case studies, drawings, and a visual archive of academic and spatial design work.
 
-![Portfolio preview](public/assets/readme.png)
+![Portfolio preview](public/assets/readme.jpg)
 
 ## Highlights
 

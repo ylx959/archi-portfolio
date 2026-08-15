@@ -164,6 +164,8 @@ Judge a fold by **α × Δ**, not by Δ: a shadow at `alpha: 0.08` can be 10 off
 
 There were 164 colour literals across the nine stylesheets and no token for any of them, so changing the site's ink meant a search-and-replace across every file. Around 165 are now tokens; what is left is one-off tints that genuinely differ. Reach for a token before adding a hex.
 
+**The hero's side copy is positioned against the card on desktop and against the centre on touch.** `right: calc(50% + (var(--hero-card-width) / 2) + var(--hero-copy-gap))` is fine while the card is a card, but touch sets `--hero-media-width: calc(100% - 24px)`, so that expression resolves past `100%`, the box collapses to a negative width and the copy overflows off screen. Phones escaped it because the `max-width: 768px` block already positions against the centre; tablets — coarse pointer, wider than 768px — fell between the two and needed a block of their own.
+
 **The hero's side copy has a geometry budget on phones.** During the comma scrub the two words converge by `--hero-side-cluster-shift` *plus* `--hero-side-pull-distance`, and the two add up. At `max-width: 768px` they are closing a 44px gap (each copy sits 22px off centre), so their sum must stay under about 20px a side or the words cross. Both were authored when the story never ran at this width, so both were dead values that had never been seen — the pull distance was not even a variable. If the words overlap, that sum is why.
 
 `@keyframes` belongs to the component that plays it. `gallery-arrow-scroll-left` / `-right` were defined in `drawings.css` while only `project-detail.css` used them, which meant a change to the drawings section could silently break the project overlay; they now live with their user.
