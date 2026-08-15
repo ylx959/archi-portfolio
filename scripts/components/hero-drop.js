@@ -296,6 +296,18 @@ export function initHeroDrop() {
     });
 
     document.addEventListener("portfolio:hero-drop", function (event) {
-        drop(event.detail && event.detail.target ? event.detail.target : "card");
+        const target = event.detail && event.detail.target ? event.detail.target : "card";
+
+        // Only answer for the pieces this module actually drops. `drop()` reports
+        // straight back when it has no body for a name — that is the safety net
+        // for one of *its* elements going missing, and it must not fire for a
+        // target another component owns. It did: the ampersand's request landed
+        // here too, this file answered "dropped" for it on the spot, and the
+        // intro stopped waiting while the ampersand was still mid-hop.
+        if (target !== "headline" && !droppers[target]) {
+            return;
+        }
+
+        drop(target);
     });
 }

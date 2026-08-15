@@ -74,6 +74,13 @@ let isHeroExpandComplete = false;
 // sequence has finished announcing itself.
 let isHeroIntroComplete = false;
 
+// The ampersand reports when it has finished hopping into place. The wheel gate
+// below reads this directly rather than inferring it from where the intro's
+// promise chain has got to: the chain also resolves on a fallback timer, and a
+// timer that beat the animation would hand the wheel over mid-hop. This cannot —
+// it is only ever set by the ampersand actually landing.
+let isHeroAmpersandLanded = false;
+
 // Minimum time each intro line stays up. On a warm cache the image is ready
 // almost immediately, and a "Loading" that flashes past is worse than none.
 const heroIntroTiming = {
@@ -304,7 +311,12 @@ function startHeroIntroSequence() {
         })
         .then(function () {
             isHeroIntroComplete = true;
-            hero.classList.remove("is-intro-loading");
+
+            // The hint invites a scroll, so it must not appear while the wheel
+            // is still dead. Same condition as the gate, so the two cannot drift.
+            if (isHeroAmpersandLanded) {
+                hero.classList.remove("is-intro-loading");
+            }
             syncHeroExpandMode();
         });
 }
@@ -565,7 +577,7 @@ export function isHeroStoryActive() {
     }
 
     if (!isEntered()) {
-        return isHeroIntroComplete && !isHeroExpandComplete;
+        return isHeroIntroComplete && isHeroAmpersandLanded && !isHeroExpandComplete;
     }
 
     return heroState.isStoryUnlocked;
@@ -740,6 +752,18 @@ function syncHeroExpandMode() {
 }
 
 export function initHero() {
+    document.addEventListener("portfolio:hero-dropped", function (event) {
+        if (!event.detail || event.detail.target !== "ampersand") {
+            return;
+        }
+
+        isHeroAmpersandLanded = true;
+
+        if (isHeroIntroComplete && hero) {
+            hero.classList.remove("is-intro-loading");
+        }
+    });
+
     html.classList.add("is-locked");
     body.classList.add("is-locked");
     setupDescriptionScrambleAnimation();

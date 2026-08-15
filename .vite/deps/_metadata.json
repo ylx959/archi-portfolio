@@ -1,0 +1,15 @@
+{
+  "hash": "d51b81e9",
+  "configHash": "b0e903d4",
+  "lockfileHash": "22ecc708",
+  "browserHash": "56203ca0",
+  "optimized": {
+    "lenis": {
+      "src": "../../node_modules/lenis/dist/lenis.mjs",
+      "file": "lenis.js",
+      "fileHash": "e204b602",
+      "needsInterop": false
+    }
+  },
+  "chunks": {}
+}
