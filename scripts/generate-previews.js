@@ -14,9 +14,15 @@ const shouldForce = process.argv.includes("--force");
 vm.createContext(context);
 vm.runInContext(source, context, { filename: projectDataPath });
 
-const projectDetails = Array.isArray(context.window.MINEPORT_PROJECT_DETAIL_DATA)
-    ? context.window.MINEPORT_PROJECT_DETAIL_DATA
-    : [];
+function readProjectArray(name) {
+    return Array.isArray(context.window[name]) ? context.window[name] : [];
+}
+
+// Unpublished entries are covered too: they cost nothing here (they share their
+// images with published projects) and it means moving one onto the site does not
+// also need a preview run.
+const projectDetails = readProjectArray("MINEPORT_PROJECT_DETAIL_DATA")
+    .concat(readProjectArray("MINEPORT_UNPUBLISHED_PROJECT_DATA"));
 
 // Everything is reduced to a repo-relative "assets/images/…" first, because the
 // two places images are declared spell the same file differently: the data file
@@ -39,6 +45,12 @@ function getPreviewPath(imagePath) {
 const imageUrls = new Set();
 
 projectDetails.forEach(function (detail) {
+    // Card thumbnails used to be background-image rules in project-grid.css and had
+    // to be scraped out of the stylesheet; they are a field on the entry now.
+    if (detail.cardImage) {
+        imageUrls.add(toRepoRelative(detail.cardImage));
+    }
+
     (detail.images || []).forEach(function (imageUrl) {
         imageUrls.add(toRepoRelative(imageUrl));
     });
@@ -47,22 +59,6 @@ projectDetails.forEach(function (detail) {
         imageUrls.add(toRepoRelative(imageUrl));
     });
 });
-
-// Card thumbnails are not in the data file at all — they are background-image
-// rules in the grid stylesheet. Read them from there rather than rebuilding the
-// path convention here, so a card that moves its file stays covered.
-const cardStylesheet = path.join(root, "styles", "components", "project-grid.css");
-
-if (fs.existsSync(cardStylesheet)) {
-    const stylesheet = fs.readFileSync(cardStylesheet, "utf8");
-    const urlPattern = /url\(["']?((?:\.\.\/)+assets\/images\/[^"')]+)["']?\)/g;
-    let cardMatch = urlPattern.exec(stylesheet);
-
-    while (cardMatch) {
-        imageUrls.add(toRepoRelative(cardMatch[1]));
-        cardMatch = urlPattern.exec(stylesheet);
-    }
-}
 
 let createdCount = 0;
 let skippedCount = 0;

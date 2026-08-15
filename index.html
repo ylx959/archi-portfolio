@@ -22,15 +22,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@100..900&family=Roboto+Flex:wdth,wght@25..151,100..1000&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles/base.css?v=68">
-    <link rel="stylesheet" href="styles/components/hero.css?v=68">
-    <link rel="stylesheet" href="styles/components/floating-nav.css?v=68">
-    <link rel="stylesheet" href="styles/components/project-grid.css?v=68">
-    <link rel="stylesheet" href="styles/components/project-detail.css?v=68">
-    <link rel="stylesheet" href="styles/components/drawings.css?v=68">
-    <link rel="stylesheet" href="styles/components/about.css?v=68">
-    <link rel="stylesheet" href="styles/components/contact.css?v=68">
-    <link rel="stylesheet" href="styles/components/cursor-follower.css?v=68">
+    <link rel="stylesheet" href="styles/base.css?v=9bb3ef28">
+    <link rel="stylesheet" href="styles/components/hero.css?v=1368b361">
+    <link rel="stylesheet" href="styles/components/floating-nav.css?v=14ebaf19">
+    <link rel="stylesheet" href="styles/components/project-grid.css?v=a092c45f">
+    <link rel="stylesheet" href="styles/components/project-detail.css?v=2b519a52">
+    <link rel="stylesheet" href="styles/components/drawings.css?v=6ac8dead">
+    <link rel="stylesheet" href="styles/components/about.css?v=ee7126dd">
+    <link rel="stylesheet" href="styles/components/contact.css?v=426cbd9d">
+    <link rel="stylesheet" href="styles/components/cursor-follower.css?v=b4a623c7">
 </head>
 <body>
     <header class="hero is-intro-pending" id="home">
@@ -125,89 +125,16 @@
                 </div>
             </section>
 
-            <section class="project-grid">
-                <article class="project-card" data-category="architecture" data-year="2024 Summer">
-                    <div class="project-image image-grid-01"></div>
-                    <div class="project-caption">
-                        <h2>Double Interaction</h2>
-                        <p>Education</p>
-                        <p>2024, Summer</p>
-                    </div>
-                </article>
+            <!-- Cards are rendered by scripts/components/project-grid.js, one per
+                 entry in scripts/mineport-project-data.js. They used to be written
+                 out here as well, joined to that data by array index alone. -->
+            <section class="project-grid"></section>
 
-                <article class="project-card" data-category="architecture" data-year="2023 Fall">
-                    <div class="project-image image-grid-02"></div>
-                    <div class="project-caption">
-                        <h2>Euphoria</h2>
-                        <p>Residential</p>
-                        <p>2023, Fall</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2024 Fall">
-                    <div class="project-image image-grid-03"></div>
-                    <div class="project-caption">
-                        <h2>Light,Stone,Hope</h2>
-                        <p>Religious</p>
-                        <p>2024, Fall</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2024 Spring">
-                    <div class="project-image image-grid-04"></div>
-                    <div class="project-caption">
-                        <h2>Vertical Forest</h2>
-                        <p>Residential</p>
-                        <p>2024, Spring</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2023 Winter">
-                    <div class="project-image image-grid-05"></div>
-                    <div class="project-caption">
-                        <h2>Scene of Sense</h2>
-                        <p>Culture</p>
-                        <p>2023, Winter</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2025 Summer">
-                    <div class="project-image image-grid-06"></div>
-                    <div class="project-caption">
-                        <h2>Meditouch</h2>
-                        <p>Education</p>
-                        <p>2025, Summer</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2024 Winter">
-                    <div class="project-image image-grid-07"></div>
-                    <div class="project-caption">
-                        <h2>Kitchenless</h2>
-                        <p>Residential</p>
-                        <p>2024, Winter</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2025 Fall">
-                    <div class="project-image image-grid-08"></div>
-                    <div class="project-caption">
-                        <h2>Not Just a Museum</h2>
-                        <p>Culture</p>
-                        <p>2025, Fall</p>
-                    </div>
-                </article>
-
-                <article class="project-card" data-category="architecture" data-year="2026 Summer">
-                    <div class="project-image image-grid-09"></div>
-                    <div class="project-caption">
-                        <h2>Not Just a Museum</h2>
-                        <p>Culture</p>
-                        <p>2026, Summer</p>
-                    </div>
-                </article>
-
-            </section>
+            <!-- Sits outside the grid, where project-grid.js also puts its empty
+                 state — inside it, this would be a grid item. -->
+            <noscript>
+                <p class="project-empty-state is-visible">This portfolio needs JavaScript to show the work.</p>
+            </noscript>
         </div>
     </main>
 
@@ -511,7 +438,7 @@
         </div>
     </div>
 
-    <script src="scripts/mineport-project-data.js?v=96"></script>
-    <script type="module" src="scripts/main.js?v=70"></script>
+    <script src="scripts/mineport-project-data.js?v=5067c7fc"></script>
+    <script type="module" src="scripts/main.js?v=289b5c42"></script>
 </body>
 </html>

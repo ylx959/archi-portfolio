@@ -42,8 +42,8 @@
 | 建置工具 | 無。沒有 webpack / Vite / package.json |
 | 相依套件 | 執行期 0 個（`vendor/` 有 Lenis、GSAP，但**尚未接上**） |
 | 測試 | 無自動化測試 |
-| 部署 | GitHub Pages，`main` 分支即上線 |
-| 規模 | 約 8,800 行（JS ~3,000 / CSS ~3,900 / HTML 530） |
+| 部署 | `main` 分支即上線（repo `github.com/ylx959/portfolio-website`，線上位址 `ylx-portfolio.netlify.app`）。無 CI、無 build |
+| 規模 | 約 9,750 行（JS ~5,050 / CSS ~4,180 / HTML 517） |
 
 ### 1.2 為什麼不用框架（這題一定會被問）
 
@@ -139,22 +139,38 @@ python3 -m http.server 8000    # 然後開 http://localhost:8000
 
 > 這題常被拿來考「你有沒有真的自己跑過專案」。
 
-### 2.4 防止 FOUC 的 inline critical CSS
+### 2.4 第一幀要長什麼樣：inline critical CSS 與 `is-intro-pending`
 
 `index.html` 的 `<head>` 裡有一小段 inline `<style>`：
 
 ```html
 <style>
     .hero { background: #ffffff; }
-    .hero .hero-main-image { opacity: 0; visibility: hidden; }
-    .hero.is-main-image-ready .hero-main-image-overlay,
-    .hero.is-main-image-ready .hero-main-image-visual { visibility: visible; }
+
+    /* 只寫 opacity，不寫 visibility：加了 visibility 之後淡入會卡在 0，
+       因為元素是在同一幀裡才翻出 hidden 的 */
+    .hero .hero-main-image { opacity: 0; }
 </style>
 ```
 
-**為什麼要 inline？** 外部 CSS 是非同步下載的；在它到達之前，`<img>` 已經可能被畫出來，造成主視覺「先閃一下再淡入」。inline 的規則跟著 HTML 同時到達，能保證圖片一開始就是隱藏的，等 JS 確認 `decode()` 完成才加上 `is-main-image-ready`（見 `scripts/components/hero.js` 的 `preloadHeroMainImage`）。
+**為什麼要 inline？** 外部 CSS 是非同步下載的；在它到達之前，`<img>` 已經可能被畫出來，造成主視覺「先閃一下再淡入」。inline 的規則跟著 HTML 同時到達，能保證圖片一開始就是隱藏的，等 JS 確認 `decode()` 完成才淡入（見 `scripts/components/hero.js` 的 `preloadHeroMainImage`）。
 
 這是 **critical CSS** 的最小實作。
+
+**同一類問題的第二個案例：`is-intro-pending`**
+
+標題「Architecture & Design」是 `index.html` 裡的靜態 markup，跟著 HTML 一起畫；模組是 defer，要等 HTML 解析完才跑。實測模組跑完在 2151ms，第一次繪製在那之前 —— 所以第一眼看到的是動畫的**結局**，然後 JS 才清空重演。
+
+初始狀態掛在 markup 上，由 render-blocking 的 `hero.css` 隱藏，JS 開演時移除：
+
+```html
+<header class="hero is-intro-pending" id="home">
+```
+```css
+.hero.is-intro-pending .hero-expand-title { opacity: 0; visibility: hidden; animation: none; }
+```
+
+**通則**：初始狀態若靠 JS 設定，就必然有一段 JS 還沒跑的視窗期。只能靠**阻塞繪製的 CSS** 解決 —— `DOMContentLoaded` / `defer` 保證的是「DOM 好了」，不是「還沒畫」。
 
 ### 2.5 字型載入
 
@@ -203,7 +219,7 @@ if (document.readyState === "loading") {
 | --- | --- |
 | `constants.js` | 時間常數、`HERO_PHASES` 列舉、`matchMedia` 查詢 |
 | `dom.js` | `html` / `body` 兩個節點 |
-| `utils.js` | easing 函式、文字亂碼動畫、格式化、`isMobileHeroMode()` |
+| `utils.js` | easing 函式、文字亂碼動畫、格式化、`isMobileHeroMode()`、`getPreviewImageSrc()` |
 | `state.js` | 是否已進場、訪客輸入的名字 |
 | `project-data.js` | `projectDetails`，從全域切片而來 |
 | `sections.js` | section 清單、目前 section 判斷、sticky 堆疊位移 |
@@ -358,13 +374,20 @@ document.addEventListener("portfolio:entered", handleEnteredStateChange);
 Drawings 卡片與 sections 都靠 sticky 疊在一起：
 
 ```css
+.drawings-track {
+    --drawings-stack-top: 148px;     /* 卡片停在哪 */
+    --drawings-stack-step: 14px;     /* 下一張往下錯開多少 */
+}
+
 .drawings-card {
     position: sticky;
-    top: calc(148px + (var(--drawings-card-index, 0) * 14px));
+    top: calc(var(--drawings-stack-top) + (var(--drawings-card-index, 0) * var(--drawings-stack-step)));
     z-index: calc(20 + var(--drawings-card-index, 0));
     transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.92));
 }
 ```
+
+停靠位置寫成 track 上的兩個 token，是因為 **`drawings.js` 也要用到同一組數字**（算陰影衰減時要知道卡片錯開多少）。手機斷點只覆寫這兩個值就換了一整套堆疊節奏。這叫「**單一事實來源（single source of truth）**」—— 若兩邊各寫一份，改了 CSS 而忘記改 JS，陰影就會算錯而且不會報錯。詳見 §6.11。
 
 **sticky 的成立條件（面試常考）：**
 1. 必須指定 `top`/`bottom`/`left`/`right` 至少一個，否則等同 `static`。
@@ -718,7 +741,68 @@ if (!isConsumed) { return false; }     // 回 false = 交還捲動權
 **追問：**
 - 「為什麼不用 GSAP ScrollTrigger？」→ 可以，而且會少寫很多程式碼。這裡是刻意手寫來完全控制「何時交還捲動權」。專案裡 `vendor/` 確實放了 GSAP 但沒接。
 - 「狀態機為什麼用字串常數不用 enum？」→ 沒有 TypeScript。`HERO_PHASES` 物件是窮人版 enum。
-- 「手機怎麼辦？」→ `isMobileHeroMode()`（`innerWidth <= 768`）直接把整個 story 關掉，進場後 900ms 自動捲到專案區。**降級而非硬撐**。
+- 「手機怎麼辦？」→ 見下一小節。**降級而非硬撐**，但降級本身有代價。
+
+#### 6.2.1 觸控降級：連續驅動 vs 離散驅動
+
+hero 第一幕（媒體撐滿畫面）由 `--hero-expand-progress` 一個變數驅動。桌機用滾輪把它從 0 推到 1；觸控沒有滾輪可 scrub，`completeHeroExpand()` 直接 `writeExpandProgress(1)` —— **同一幀從 0 跳到 1**。
+
+於是所有讀這個變數的樣式，桌機是漸變、手機是跳變：
+
+```css
+.hero-visual::after { opacity: clamp(0, calc((var(--hero-expand-progress) - 0.45) / 0.55), 1); }  /* 黑色遮罩 */
+.hero-expand-title  { opacity: clamp(0, calc(1.6 - (var(--hero-expand-progress) * 1.9)), 1); }    /* 標題 */
+```
+
+**修法：在觸控區塊裡替這些屬性補 `transition`，給跳變一段路可走。**
+
+```css
+@media (hover: none), (pointer: coarse) {
+    .hero-visual::after { transition: opacity 1.8s cubic-bezier(0.33, 0, 0.15, 1); }
+
+    .hero-expand-title {
+        will-change: opacity, filter, transform;
+        transition:
+            opacity 1.5s cubic-bezier(0.33, 0, 0.15, 1),
+            filter  1.5s cubic-bezier(0.33, 0, 0.15, 1),
+            transform 1.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero.is-expanded .hero-expand-title {
+        filter: blur(6px);
+        transform: translateY(-50%) scale(1.06);   /* 散開比淡出慢 0.4s 收尾 */
+    }
+}
+```
+
+**核心觀念：同一個屬性，連續驅動時不能有 transition，離散驅動時必須有。** 桌機的值每一幀都被 JS 改寫，加了 transition 等於讓瀏覽器去追一個一直在跑的目標，動畫會遲滯、手感變黏。所以 transition 只能寫在觸控區塊裡。
+
+**降級還有兩個不是 transition 的問題：**
+
+| 症狀 | 原因 | 修法 |
+| --- | --- | --- |
+| 卡片進到輸入名字時縮一下 | 觸控的起始值 `calc(100% - 16px)` 與展開終點 `calc(100% - 24px)` 不一致 | 兩個數字對齊。桌機是滑到終點所以必然相同，觸控是直接把起點設成終點，得手動保證 |
+| resize 把還在演的開場戲掐斷 | 手機瀏覽器自發 `resize`（網址列收起、鍵盤彈出），而 `syncHeroExpandMode()` 一被呼叫就快轉到結尾 | 補 `!isHeroIntroComplete` 守衛 |
+
+> 一句話：**降級路徑不是原路徑的子集，是另一條路徑，要另外測。** 「關掉動畫」不等於降級完成 —— 還要重新指定那個瞬間怎麼過渡、起點終點自己對齊。
+
+#### 6.2.2 手機表單進場：blur 的成本與高度預留
+
+**(1) 進場只用 `opacity` + `transform`。** 原本加了 `filter: blur(8px)`，實測會頓：blur 半徑動起來**無法被合成**，每幀都要在主執行緒重新光柵化，而它出場的同時描述文字正在跑逐字亂碼（每 55ms 改一次 DOM）。opacity 與 transform 走合成器，主執行緒再忙都不影響。
+
+（§6.2.1 的標題留著 blur，是因為只跑 1.5s，且下面 (2) 的重排問題已修掉。**同一個屬性能不能用，取決於當下主執行緒還剩多少。**）
+
+**(2) 高度要先撐住，否則表單會被文字推走。** `.content` 絕對置中，描述句子逐字打出 —— 手機寬度下每多一行，整塊就往下移半行（實測掉 21px、分兩次跳）。把 markup 裡本來就有的 `aria-hidden` 複本疊進同一個 grid 格當「幽靈」：
+
+```css
+.description-track { display: grid; }
+.description-copy  { grid-area: 1 / 1; }
+.description-copy[aria-hidden="true"] { display: block; visibility: hidden; }
+```
+
+幽靈那份一開始就是完整句子，區塊從第一幀就是最終高度。**這是 `visibility: hidden` vs `display: none` 最實際的用例：看不見但仍佔位。**
+
+**(3) 輸入框可以變小，字級不行。** `font-size: 16px` 是刻意保留的 —— **iOS Safari 在字級小於 16px 的輸入框取得焦點時會放大整個頁面**，之後 hero 的構圖回不來。縮的是盒子與 padding。
 
 ### 6.3 自訂慣性捲動
 
@@ -819,6 +903,50 @@ card.style.display = shouldShow ? "" : "none";
 
 `--card-index` 是 JS 在 init 時寫上去的，讓 CSS 自己算延遲 —— 又一次「JS 給數字、CSS 給表現」。
 
+**卡片縮圖的 blur-up：背景圖沒有 `load` 事件**
+
+卡片縮圖不是 `<img>`，是 `.image-grid-NN` 的 `background-image`。**CSS 背景圖不會觸發 `load`**，所以中途沒有任何可掛勾的時機點，只能一張張硬跳出來。解法是用一個探針去問同一個 URL：
+
+```js
+// scripts/components/project-grid.js
+function setupProjectCardImage(card) {
+    const image = card.querySelector(".project-image");
+    const match = /url\(["']?([^"')]+)["']?\)/.exec(window.getComputedStyle(image).backgroundImage);
+    if (!match) { return; }
+
+    const probe = new Image();
+    probe.decoding = "async";
+    probe.src = match[1];
+
+    if (probe.complete && probe.naturalWidth > 0) {   // 已在快取：直接顯示
+        card.classList.add("is-image-loaded");
+        return;
+    }
+
+    card.style.setProperty("--preview-image", "url('…')");
+    card.classList.add("is-image-pending");
+    probe.addEventListener("load",  settle, { once: true });
+    probe.addEventListener("error", settle, { once: true });
+}
+```
+
+**四個設計重點：**
+
+1. **探針不會重複下載** —— 同一個 URL 命中同一個快取項目，只發一個請求。這是「幫背景圖補上 load 事件」的標準手法。
+2. **網址從 `getComputedStyle` 讀回**，不在 JS 重寫一份路徑，避免兩份事實來源。
+3. **`probe.complete` 早退**：專案區在首屏下方但背景圖跟頁面一起下載，模組跑起來時有些已經好了。少了這個判斷，那些卡片會先變模糊再淡回來 —— 往回閃比原本的問題更糟。
+4. **`error` 也要 settle**：任何「等待 → 揭曉」的狀態機都要有失敗出口，否則壞檔會讓卡片永遠卡在模糊層後面。
+
+CSS 端讓**預設狀態是「看得見」**，模糊層只有 JS 明確說「還沒好」時才蓋上：
+
+```css
+.project-card::before { opacity: 0; }
+.project-card.is-image-pending::before { opacity: 1; }
+.project-card.is-image-pending .project-image { opacity: 0; }
+```
+
+反過來寫的話，JS 一壞整片作品就是空白。**降級的方向要是「少了效果」，不能是「少了內容」。**
+
 ### 6.6 專案詳細 Overlay
 
 **檔案**：`scripts/components/project-detail.js`
@@ -838,9 +966,11 @@ if (remainingScroll < 900) { loadMoreProjectDetailImages(); }
 **(2) blur-up 佔位圖（progressive image loading）**
 
 ```js
-function getPreviewImageSrc(imageSrc) {
-    return imageSrc.split("?")[0]
-        .replace("../assets/images/", "../assets/images/previews/")
+// scripts/core/utils.js —— 卡片縮圖與詳細圖共用，所以放在 core 而不是某個 component
+export function getPreviewImageSrc(imageSrc) {
+    return String(imageSrc || "")
+        .split("?")[0]
+        .replace("assets/images/", "assets/images/previews/")
         .replace(/\.[^/.]+$/, ".jpg") + "?v=2";
 }
 ```
@@ -848,6 +978,41 @@ function getPreviewImageSrc(imageSrc) {
 `scripts/generate-previews.js` 用 macOS 的 `sips` 把每張圖縮成 **48px 寬、品質 45 的 JPEG**（通常 1–2KB），放在鏡像的 `previews/` 目錄。CSS 先把它當背景放大模糊顯示，真圖 `load` 後加上 `is-loaded`，把真圖淡入。
 
 這就是 Medium / Next.js `<Image placeholder="blur">` 的原理，只是手工做。
+
+> 這個函式原本住在 `project-detail.js`，卡片縮圖也要用之後才搬到 `core/utils.js`。判斷標準是**有沒有第二個使用者**，不是「看起來夠不夠通用」。
+
+**(2b) 模糊佔位還不夠：版面仍會跳（CLS）**
+
+blur-up 解決的是「出現時突不突兀」，沒解決「**出現時把下面的內容推走**」。詳細頁的 `<img>` 是 `height: auto` 且沒寫尺寸，載完之前瀏覽器不知道它多高。
+
+修法是**用佔位圖的尺寸把框先釘住** —— 佔位圖同比例、只有 1–2KB，會比原圖早很多到：
+
+```js
+function reserveProgressiveImageBox(image, previewSrc) {
+    const probe = new Image();
+
+    function applyRatio() {
+        if (probe.naturalWidth && probe.naturalHeight) {
+            image.style.aspectRatio = probe.naturalWidth + " / " + probe.naturalHeight;
+        }
+    }
+
+    probe.addEventListener("load", applyRatio, { once: true });
+    probe.decoding = "async";
+    probe.src = previewSrc;
+
+    if (probe.complete) { applyRatio(); }    // 快取命中就在這一幀套用
+}
+```
+
+**兩個設計決定：**
+
+1. **比例是「釘住」而非載完交還給原圖。** 佔位圖的短邊被四捨五入到整數像素，兩者比例差約 1%；載完放手就等於把 bug 縮小後裝回去。圖片是 `object-fit: contain`，那 1% 只表現成邊緣一條髮絲寬的白。
+2. **必須處理 `probe.complete`。** 重開同一個專案、或兩個專案共用同一張圖時是快取命中，`load` 不會再發一次，少了這行圖片會先塌成 0 高再撐開。**「已經在快取裡」是所有非同步載入邏輯都要另外處理的路徑**（§6.5 的卡片縮圖同理）。
+
+實測載入前後高度都是 `[516, 482, 465, 465, 991]`，位移為 0。
+
+> 為什麼不直接在 HTML 寫 `width`/`height`？圖片是 JS 動態 append 的，尺寸只存在於圖檔本身；寫死就要在資料檔多維護一份會過期的尺寸表。用佔位圖去問，等於讓檔案自己回答。
 
 **(3) 兩種 lazy loading 並存 —— 而且知道為什麼**
 
@@ -961,7 +1126,7 @@ if (!isSettled) { renderFrame = requestAnimationFrame(applyPressure); }
 **(4) 為什麼沒有用 CSS transition？**
 程式碼裡有註解特別說明：`font-variation-settings` 若加 transition，會**每一幀重新光柵化字形**（re-rasterise glyphs）。所以緩動是在 JS 裡用 lerp 做的，CSS 只負責套用最終值。
 
-### 6.9 Contact 漣漪場（最新改寫的部分）
+### 6.9 Contact 漣漪場
 
 **檔案**：`scripts/components/contact.js`
 
@@ -1008,6 +1173,60 @@ sectionFloatingNav.style.setProperty("--nav-highlight-scale-y", "0.92");   // �
 
 另外它會在閒置 800ms 後收合（`scheduleFloatingNavCollapse`），並透過 `onWheelActivity(wakeFloatingNav)` 在使用者捲動時醒來 —— 又一次用 §3.3 的 observer 接縫，而不是 import hero 或 scroll 的內部狀態。
 
+### 6.11 Drawings 卡片堆疊與陰影衰減
+
+**檔案**：`scripts/components/drawings.js`、`styles/components/drawings.css`
+
+卡片用 `position: sticky` 逐張停靠、疊成一落。位置完全由 CSS 算（見 §4.4），JS 只寫入三個變數：`--drawings-card-index`（init 時寫一次）、`--drawings-card-scale`、`--drawings-card-shadow`。
+
+**(1) 手機也要能堆疊。** 原本 `drawings.js` 有一行 `if (window.innerWidth <= 768) return;` 直接放棄；移掉之後，手機只需覆寫兩個 token 就換一整套節奏：
+
+```css
+@media (max-width: 768px) {
+    .drawings-track { --drawings-stack-top: 88px; --drawings-stack-step: 9px; }
+}
+```
+
+（十張卡片用桌機的 14px 步進，在短螢幕上會走出畫面外，所以步進要縮。）
+
+順帶要小心觸控上的 `:hover`：**點過一次之後 `:hover` 會黏著**，所以手機的「取消 hover 效果」規則不能寫 `transform: none` —— 那會把堆疊用的 scale 一起清掉，被點到的那張卡會掉出隊伍。要改成重述堆疊的 transform：
+
+```css
+.drawings-card:hover { transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.94)); }
+```
+
+**(2) 陰影不能累加。** 卡片的投影展開到 22px 和 44px，遠大於堆疊 9–14px 的步進 —— 四張停好的卡片各自把整片陰影壓在下一張上，看起來就是一條灰帶而不是四張卡。
+
+修法是讓**陰影隨被覆蓋程度衰減**，用實際距離量而不是用捲動位置換算：
+
+```js
+function getCardShadowStrength(rects, index, stickyStep) {
+    const next = rects[index + 1];
+    if (!next) { return "1"; }
+
+    const distance = next.top - rects[index].top;
+    // distance = 卡片高度 → 完全沒被蓋；distance = 步進 → 正停在上面
+    const span = Math.max(1, rects[index].height - stickyStep);
+    const covered = Math.max(0, Math.min((rects[index].height - distance) / span, 1));
+
+    return (1 - (covered * 0.88)).toFixed(3);   // 留 0.12 的底，卡片之間仍有接縫
+}
+```
+
+```css
+box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,                                    /* 不衰減：卡片自己的邊 */
+    0 2px 5px  rgba(18, 15, 12, calc(0.018 * var(--drawings-card-shadow, 1))),
+    0 10px 22px rgba(18, 15, 12, calc(0.032 * var(--drawings-card-shadow, 1))),
+    0 24px 44px rgba(18, 15, 12, calc(0.028 * var(--drawings-card-shadow, 1)));
+```
+
+**兩個觀念：**
+- **只縮「投射到別人身上」的層，不縮「自己的邊」**（inset 高光與髮絲邊框）。前者是深度，後者是物件本身。
+- **不歸零**：留 0.12 的底，堆疊仍有可見的接縫，不會融成一塊。
+
+> ⚠️ `box-shadow` 改變是 **repaint，不是合成**（見 §2.1）。這裡每幀最多改 10 張卡的陰影，在手機上是可接受的取捨；若真的拖幀，最便宜的退路是拿掉最寬的那層 `0 24px 44px`。
+
 ---
 
 ## 7. 效能工程
@@ -1026,6 +1245,19 @@ elements.forEach((el, i) => { el.style.height = heights[i] + 10 + "px"; });
 會觸發強制同步 layout 的常見屬性：`offsetTop/Left/Width/Height`、`clientWidth/Height`、`scrollTop/Height`、`getBoundingClientRect()`、`getComputedStyle()`。
 
 本專案的體現：`drawings-title.js` 的 measure/apply 分離、`sections.js` 的 rAF ticking、以及刻意使用 `void offsetWidth` 觸發 reflow 來重播動畫（§4.8）。
+
+`drawings.js` 的堆疊迴圈是同一個模式的實例 —— 陰影衰減需要相鄰卡片的位置，所以**先全部量、再全部寫**：
+
+```js
+const rects = cards.map(function (card) { return card.getBoundingClientRect(); });   // 讀
+
+cards.forEach(function (card, index) {                                              // 寫
+    card.style.setProperty("--drawings-card-scale", ...);
+    card.style.setProperty("--drawings-card-shadow", getCardShadowStrength(rects, index, stickyStep));
+});
+```
+
+交錯寫的話，每次 `setProperty` 都會讓下一張卡的 `getBoundingClientRect()` 失效 —— 一次捲動幀就從**一次** forced layout 變成**每張卡一次**。
 
 ### 7.2 圖片管線
 
@@ -1136,14 +1368,14 @@ card.addEventListener("keydown", function (event) {
 它們是**純 Node、零相依**（只用 `fs`、`path`、`child_process`、`vm`）：
 
 - **`bump-assets.js`** — 正規表示式替換版本號。有趣的是它用**兩個 pattern** 分別處理 markup 與 import specifier。
-- **`generate-previews.js`** — 用 `vm.runInContext()` 在沙箱裡執行資料檔，好在 Node 端讀到 `window.MINEPORT_PROJECT_DETAIL_DATA`（因為那是給瀏覽器寫的全域腳本）。這是個聰明的小技巧。
+- **`generate-previews.js`** — 用 `vm.runInContext()` 在沙箱裡執行資料檔，好在 Node 端讀到 `window.MINEPORT_PROJECT_DETAIL_DATA`（因為那是給瀏覽器寫的全域腳本）。此外它還會**掃 `styles/components/project-grid.css` 的 `url()`**，因為卡片縮圖只存在於 CSS 背景圖裡，不在資料檔中。兩種來源的相對路徑寫法不同（資料檔 `../assets/…`、樣式表 `../../assets/…`），所以統一先過 `toRepoRelative()` 正規化。
 - **`compress-large-project-images.js`** — 尺寸上限 → 品質階梯 `[86, 82, 78, 74, 70, 66]` 逐級嘗試直到低於 420KB。
 
 三支都呼叫 macOS 內建的 **`sips`**，所以**在 Linux/Windows 上不能跑**。要跨平台就得換成 `sharp`（但那就需要 npm 相依）。
 
 ### 9.2 部署
 
-GitHub Pages，`main` 分支直推即上線。沒有 CI、沒有 build、沒有 preview 環境。
+`main` 分支直推即上線（repo `github.com/ylx959/portfolio-website`，線上位址 `ylx-portfolio.netlify.app`）。沒有 CI、沒有 build、沒有 preview 環境。
 
 **如果面試官問「你會怎麼改善開發流程」：**
 1. Vite（dev server + HMR + 內容雜湊檔名，取代手動 `?v=`）。
@@ -1213,6 +1445,15 @@ A：三個接縫 —— state 用 accessor（因為 ESM 的 import 是唯讀 liv
 **Q：圖片你怎麼優化？**
 A：四層 —— (1) 先限尺寸再壓位元組，因為解碼成本比下載成本更容易卡住主執行緒；(2) 48px 的模糊佔位圖做 blur-up；(3) 詳細列表批次 append + 原生 lazy；(4) 輪播手動管理 src。並且每個圖片 URL 都有自己的 `?v=`。
 
+**Q：同一段動畫在桌機順、在手機是「啪」一聲出現，為什麼？**
+A：那個效果是由一個 0→1 的 CSS 變數驅動的。桌機用滾輪連續推進，手機沒有 scrub 所以一幀跳到 1。修法是只在觸控的 media query 裡補 `transition` —— 不能寫在共用規則上，否則桌機每幀改值會變成「追一個一直在跑的目標」，動畫反而遲滯。**同一個屬性，連續驅動時不能有 transition，離散驅動時必須有。**
+
+**Q：CSS 背景圖要怎麼做 blur-up？它沒有 `load` 事件。**
+A：從 `getComputedStyle` 讀回網址，用 `new Image()` 打同一個 URL 當探針 —— 命中同一個快取項目，不會多下載。載完再切 class。要記得處理 `probe.complete`（已快取就別先藏起來再淡入）和 `error`（壞檔也要放行）。
+
+**Q：頁面第一幀就閃出動畫的結局，怎麼修？**
+A：靜態 markup 跟著 HTML 畫，defer 的模組還沒跑。只能把初始狀態寫進**阻塞繪製的 CSS**（markup 上掛 `is-intro-pending`，JS 開演時移除）。`DOMContentLoaded` 救不了，它保證的是 DOM 建好，不是還沒畫。
+
 **Q：這個網站最大的技術債是什麼？**
 A：卡片 markup 和資料檔用陣列索引耦合。新增一個專案要同步改四個地方，而且錯位不會報錯、只會默默顯示錯的內容。正確做法是從資料 render 卡片。
 
@@ -1271,6 +1512,8 @@ A：卡片 markup 和資料檔用陣列索引耦合。新增一個專案要同�
 6. **（架構）** 現在要新增一個「Awards」section，需要在進場後才顯示。寫出你會用哪個接縫、動哪些檔案，並說明為什麼不 import hero。
 7. **（重構）** 把專案卡片改成由 `mineport-project-data.js` 動態產生，消除索引耦合。列出這樣做會破壞哪些現有邏輯（提示：`.image-grid-NN` 的 CSS、filter 的 `data-*`、`projectDetails` 的 slice）。
 8. **（效能）** 用 DevTools Performance 錄一段從 hero 捲到 contact 的過程，找出最長的一個 task，說明它在做什麼。
+9. **（降級）** 把 `hero.css` 觸控區塊裡 `.hero-visual::after` 的 `transition` 註解掉，用手機模式看黑色遮罩怎麼進場，解釋為什麼桌機不需要這行、手機需要。
+10. **（載入）** 把 `project-grid.js` 裡 `probe.complete && probe.naturalWidth > 0` 的早退拿掉，重整並觀察已快取的卡片，說明為什麼「往回閃」比原本的問題更糟。
 
 ---
 
@@ -1291,4 +1534,4 @@ node scripts/compress-large-project-images.js
 
 ---
 
-*這份文件描述的是 2026-08-14 當下的程式碼狀態。改動程式後記得回來更新對應章節 —— 一份過期的教科書比沒有更危險。*
+*這份文件描述的是 2026-08-15 當下的程式碼狀態（資產版本 `?v=68`）。改動程式後記得回來更新對應章節 —— 一份過期的教科書比沒有更危險。*

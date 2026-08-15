@@ -1,6 +1,6 @@
-import { openProjectDetail } from "./project-detail.js?v=70";
-import { projectDetails } from "../core/project-data.js?v=70";
-import { formatCategory, getPreviewImageSrc } from "../core/utils.js?v=70";
+import { openProjectDetail } from "./project-detail.js?v=55d63d4b";
+import { projectDetails } from "../core/project-data.js?v=a0074993";
+import { getPreviewImageSrc } from "../core/utils.js?v=660387f7";
 
 const viewToggle = document.getElementById("viewToggle");
 
@@ -24,7 +24,9 @@ const projectGrid = document.querySelector(".project-grid");
 
 const categoryLinks = document.querySelectorAll(".category-link");
 
-export const projectCards = document.querySelectorAll(".project-card");
+// Filled by initProjectGrid once the cards exist. It cannot be resolved at module
+// load time any more, because at that point the grid is still empty.
+export let projectCards = [];
 
 let activeCategoryFilter = "all";
 
@@ -42,22 +44,66 @@ let typologyFilterCloseTimer = null;
 
 let projectEmptyState = null;
 
-// A card's thumbnail is a CSS background (`.image-grid-NN`), which fires no load
-// event — so on its own it can only appear, mid-scroll, at full contrast. This
-// gives the card the one thing the background cannot report: a probe on the same
-// URL, which the browser serves from the very same cache entry, so nothing is
-// downloaded twice. Until it answers the card wears the blurred preview.
-function setupProjectCardImage(card) {
-    const image = card.querySelector(".project-image");
+function toCssUrl(imageSrc) {
+    return "url('" + encodeURI(imageSrc).replace(/'/g, "%27") + "')";
+}
 
-    if (!image) {
-        return;
+// "2024 Summer" reads as "2024, Summer" under the card. Derived rather than
+// stored, so the year exists once in the data file instead of twice.
+function formatProjectYear(year) {
+    return String(year || "").replace(/\s+/, ", ");
+}
+
+// One card per published project. These used to be hand-written <article> blocks
+// in index.html joined to the data file by array index alone — a card and its
+// detail content could drift apart with nothing to report it, and adding a
+// project meant editing the markup, the data file and the stylesheet in step.
+function createProjectCard(detail, index) {
+    const card = document.createElement("article");
+    card.className = "project-card";
+    // The filters read these; the panels in index.html list the values they offer,
+    // and scripts/check-data.js is what checks the two still agree.
+    card.dataset.category = String(detail.category || "").toLowerCase();
+    card.dataset.year = detail.year || "";
+
+    const image = document.createElement("div");
+    // The numbered class no longer carries the picture. It stays as a hook for the
+    // occasional framing tweak — project 8 crops low and drops the dust overlay —
+    // so a new project needs no rule of its own.
+    image.className = "project-image image-grid-" + String(index + 1).padStart(2, "0");
+
+    if (detail.cardImage) {
+        image.style.backgroundImage = toCssUrl(detail.cardImage);
     }
 
-    const backgroundImage = window.getComputedStyle(image).backgroundImage;
-    const match = /url\(["']?([^"')]+)["']?\)/.exec(backgroundImage);
+    const caption = document.createElement("div");
+    caption.className = "project-caption";
 
-    if (!match) {
+    const title = document.createElement("h2");
+    title.textContent = detail.title || "";
+
+    const typology = document.createElement("p");
+    typology.textContent = detail.typology || "";
+
+    const year = document.createElement("p");
+    year.textContent = formatProjectYear(detail.year);
+
+    caption.appendChild(title);
+    caption.appendChild(typology);
+    caption.appendChild(year);
+    card.appendChild(image);
+    card.appendChild(caption);
+
+    return card;
+}
+
+// The thumbnail is a CSS background, which fires no load event — so on its own it
+// can only appear, mid-scroll, at full contrast. This gives the card the one thing
+// the background cannot report: a probe on the same URL, which the browser serves
+// from the very same cache entry, so nothing is downloaded twice. Until it answers
+// the card wears the blurred preview.
+function setupProjectCardImage(card, imageSrc) {
+    if (!imageSrc) {
         return;
     }
 
@@ -69,17 +115,17 @@ function setupProjectCardImage(card) {
     }
 
     probe.decoding = "async";
-    probe.src = match[1];
+    probe.src = imageSrc;
 
-    // The grid sits below the fold but its backgrounds start downloading with the
-    // page, so by the time the modules run some cards are already there. Those
-    // must not be hidden and faded back in — that would be a flash backwards.
+    // Reopening the page, or any project whose thumbnail is already cached, answers
+    // in this frame. Those must not be hidden and faded back in — that would be a
+    // flash backwards.
     if (probe.complete && probe.naturalWidth > 0) {
         card.classList.add("is-image-loaded");
         return;
     }
 
-    card.style.setProperty("--preview-image", "url('" + encodeURI(getPreviewImageSrc(match[1])).replace(/'/g, "%27") + "')");
+    card.style.setProperty("--preview-image", toCssUrl(getPreviewImageSrc(imageSrc)));
     card.classList.add("is-image-pending");
     // A missing or broken file settles too: better a card that reveals whatever
     // the background can show than one stuck behind a blur for good.
@@ -287,23 +333,44 @@ function resetSecondaryProjectFilters() {
     setTypologyFilterPanelOpen(false);
 }
 
+function appendProjectListInfo(card, detail) {
+    const listInfo = document.createElement("div");
+    listInfo.className = "project-list-info";
+
+    [
+        ["project-list-title", detail.title],
+        ["project-list-category", detail.category],
+        ["project-list-typology", detail.typology],
+        ["project-list-year", detail.year]
+    ].forEach(function (entry) {
+        const line = document.createElement("p");
+        line.className = entry[0];
+        line.textContent = entry[1] || "";
+        listInfo.appendChild(line);
+    });
+
+    card.appendChild(listInfo);
+}
+
 export function initProjectGrid() {
+    if (projectGrid) {
+        const cardFragment = document.createDocumentFragment();
+
+        projectDetails.forEach(function (detail, index) {
+            cardFragment.appendChild(createProjectCard(detail, index));
+        });
+
+        projectGrid.appendChild(cardFragment);
+        projectCards = Array.prototype.slice.call(projectGrid.querySelectorAll(".project-card"));
+    }
+
     projectCards.forEach(function (card, index) {
         const detail = projectDetails[index];
-        setupProjectCardImage(card);
+        setupProjectCardImage(card, detail && detail.cardImage);
         card.style.setProperty("--card-index", index);
         card.setAttribute("role", "button");
         card.setAttribute("tabindex", "0");
-        const title = card.querySelector(".project-caption h2");
-        const location = card.querySelector(".project-caption p");
-        const listInfo = document.createElement("div");
-        listInfo.className = "project-list-info";
-        listInfo.innerHTML =
-            '<p class="project-list-title">' + (detail ? detail.title : (title ? title.textContent : "")) + "</p>" +
-            '<p class="project-list-category">' + (detail ? detail.category : formatCategory(card.dataset.category)) + "</p>" +
-            '<p class="project-list-typology">' + (detail ? detail.typology : (location ? location.textContent : "")) + "</p>" +
-            '<p class="project-list-year">' + (detail ? detail.year : (card.dataset.year || "")) + "</p>";
-        card.appendChild(listInfo);
+        appendProjectListInfo(card, detail || {});
         card.addEventListener("click", function () {
             openProjectDetail(index, card);
         });

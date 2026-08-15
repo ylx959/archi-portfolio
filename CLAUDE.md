@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-page static portfolio site (YLX studio). No build step, no package.json, no dependencies, no tests — but the JavaScript is ES modules, so it must be served over HTTP (see Commands). Deployed from the `main` branch of `github.com/ylx959/portfolio-website`.
+A single-page static portfolio site (YLX studio). No build step, no package.json, no dependencies, and no test runner — but the JavaScript is ES modules, so it must be served over HTTP (see Commands). Deployed from the `main` branch of `github.com/ylx959/portfolio-website`.
+
+There is no automated test suite, but `scripts/check-data.js` covers the one class of mistake that fails silently on the live site: project data that is well-formed but wrong. Run it after touching the data file or the filters.
 
 ```
 index.html                 markup for every section
@@ -23,10 +25,15 @@ vendor/                    vendored libraries (Lenis, GSAP) — not wired up yet
 # the browser blocks ES module imports on that scheme.
 python3 -m http.server 8000        # then open http://localhost:8000
 
-# After ANY edit to a stylesheet or module — bumps ?v=N in index.html AND on
-# every import specifier, since index.html's version does not reach the modules
-# it imports and browsers cache each module URL separately.
+# After ANY edit to a stylesheet or module — stamps ?v=<content hash> in
+# index.html AND on every import specifier, since index.html's version does not
+# reach the modules it imports and browsers cache each module URL separately.
+# Idempotent: running it twice changes nothing.
 node scripts/bump-assets.js
+
+# After editing mineport-project-data.js or the filter buttons in index.html.
+# Exits 1 on an error, 0 on warnings alone.
+node scripts/check-data.js
 
 # After adding/changing project images referenced in mineport-project-data.js
 node scripts/generate-previews.js            # only creates missing previews
@@ -40,21 +47,32 @@ The image scripts shell out to macOS `sips`; they will not work on Linux.
 
 `compress-large-project-images.js` caps pixel dimensions **before** compressing to a byte budget (detail 1800px, gallery 2400px). The order matters: an earlier version optimised for file size alone and left 9449px-wide files squeezed under 1MB, which cost more in decode time than the download ever cost in bandwidth. Gallery stage images are also held in `data-src` and only given a real `src` within two slides of the current one — native `loading="lazy"` does not work there, because the track moves by `transform` and a slide's layout box never leaves the viewport.
 
-Cache busting is manual and matters: `index.html` links CSS/JS with `?v=N`, and every image URL in `mineport-project-data.js` carries its own hand-written `?v=N`. Changing an image file in place without bumping its query string leaves stale copies in browsers.
+Cache busting still has to be run by hand, but the version is derived, not counted. `bump-assets.js` stamps `?v=<first 8 hex of the file's md5>` on every CSS link, script src and import specifier, so only files that actually changed get a new URL, and re-running the script is a no-op. A module is hashed **after** its own imports have been rewritten, so a change in `core/` cascades outward — `utils.js` gets a new hash, every module importing it therefore has different bytes and a new hash of its own, up to `main.js` and the tag in `index.html`.
+
+Images are the exception: every image URL in `mineport-project-data.js` carries its own hand-written `?v=N`, including the `cardImage` thumbnails. Changing an image file in place without bumping that number leaves stale copies in browsers — `check-data.js` warns about any image URL missing one.
 
 ## Architecture
 
-### Project data ↔ markup coupling (the main gotcha)
+### The project data file is the source of truth
 
-Project cards are **static markup** in `index.html` (`.project-grid > article.project-card`), while their detail content lives in `scripts/mineport-project-data.js` as `window.MINEPORT_PROJECT_DETAIL_DATA`. They are joined **by array index only**:
+`scripts/mineport-project-data.js` publishes two globals:
 
-- `projectDetails = data.slice(0, projectCards.length)` — extra data entries are silently ignored, so a new card in the HTML is required before a new data entry is visible.
-- Card `data-category` and `data-year` drive the category/time filters; `detail.typology` (from the data file) drives the typology filter. Both must agree with the visible caption text, which is a third, independent copy in the HTML.
-- The card thumbnail is a CSS background: `.image-grid-01`…`.image-grid-09` in `styles/components/project-grid.css`.
+- `window.MINEPORT_PROJECT_DETAIL_DATA` — the published projects, in grid order. `project-grid.js` renders one `article.project-card` per entry, so **this array alone decides what the site shows**. `.project-grid` in `index.html` is empty.
+- `window.MINEPORT_UNPUBLISHED_PROJECT_DATA` — parked entries. Move one into the array above to publish it; nothing else needs editing.
 
-Adding a project therefore touches four places: the `<article>` in `index.html`, a `createProjectDetail(...)` entry at the matching index, an `.image-grid-NN` rule, and the image folders under `assets/images/projects/projectN/{card,detail,gallery}/`.
+**Adding a project touches one place plus its images**: a `createProjectDetail(...)` entry, and the folders under `assets/images/projects/projectN/{card,detail,gallery}/`. Then run `generate-previews.js`, `check-data.js` and `bump-assets.js`.
 
-Image URLs in the data file are written `../assets/images/...` even though `index.html` sits at the repo root (browsers clamp the leading `../`). Keep that prefix — `getPreviewImageSrc()` in `core/utils.js` inserts `previews/` after `assets/images/` to find the blurred placeholder, and `generate-previews.js` mirrors the same folder tree. Card thumbnails are covered too, even though they are declared as `background-image` rules rather than data entries: the script reads those URLs straight out of `project-grid.css`.
+This used to be four places. The cards were hand-written `<article>` markup joined to the data by array index alone (`data.slice(0, projectCards.length)`), the caption text was a third independent copy, and the thumbnail was a `background-image` rule keyed to `.image-grid-NN` — any of which could drift out of step without erroring. If you are tempted to put a `.project-card` back into `index.html`: don't. It would be appended *before* the generated cards and shift every index. `check-data.js` fails on exactly that.
+
+What the entry drives:
+
+- `category` (lowercased) and `year` become the card's `data-category` / `data-year`, which the category and time filters read; `typology` drives the typology filter. Each value needs a matching button in `index.html` — `check-data.js` is what checks the two still agree.
+- `title` / `typology` / `year` are the card caption (the year renders `"2024 Summer"` as `"2024, Summer"`).
+- `cardImage` is the thumbnail, written as an inline `background-image` on the generated element.
+
+`.image-grid-NN` (NN = 1-based position) survives only as a hook for per-card framing exceptions — currently just project 8, which crops low and drops the dust overlay. A project that needs no exception needs no CSS at all.
+
+Image URLs in the data file are written `../assets/images/...` even though `index.html` sits at the repo root (browsers clamp the leading `../`). Keep that prefix — `getPreviewImageSrc()` in `core/utils.js` inserts `previews/` after `assets/images/` to find the blurred placeholder, and `generate-previews.js` mirrors the same folder tree.
 
 Note the different rule for **CSS**: `url()` resolves against the stylesheet's own location, so component stylesheets one level deep need `../../assets/…`. Moving a rule between `styles/` and `styles/components/` silently breaks its images.
 
@@ -68,9 +86,9 @@ Note the different rule for **CSS**: `url()` resolves against the stylesheet's o
 | --- | --- |
 | `constants.js` | timings, `HERO_PHASES`, the `matchMedia` queries |
 | `dom.js` | `html` / `body` |
-| `utils.js` | easing, text scramble, formatting, `isMobileHeroMode()` |
+| `utils.js` | easing, text scramble, formatting, `isMobileHeroMode()`, `getPreviewImageSrc()` |
 | `state.js` | whether the visitor entered, and the name they gave |
-| `project-data.js` | `projectDetails`, sliced from the global the data file publishes |
+| `project-data.js` | `projectDetails` — the whole published array, no longer a slice |
 | `sections.js` | the section list, current-section lookup, sticky stack motion |
 | `scroll.js` | smooth scroll, the custom inertia scroll, and the wheel/touch listeners |
 
@@ -85,6 +103,7 @@ Subsystems worth knowing before editing:
 - **Enter gate** (`components/hero.js`). `html`/`body` start with `is-locked` (page blurred, scroll disabled) until the name form is submitted. Until then, in-page anchor links are inert.
 - **Hero story scrub** (`components/hero.js`). A state machine (`HERO_PHASES`, `heroState`) driven by wheel delta while at scroll top. The wheel only moves `heroStoryTargetProgress`; a rAF loop eases `heroState.progress` toward it and writes `--hero-story-progress` / `--hero-side-pull` / `--hero-side-scale` on `.hero`. The wheel stays captured for as long as that easing is in flight, so the page cannot scroll out from under an unfinished animation — that is what `isSettling` in `scrubHeroStory` is for. Reaching 1 auto-scrolls to `#projects`.
 - **Custom inertia scroll** (`core/scroll.js`). Desktop-only wheel hijacking that lerps toward a target scroll position. Disabled for coarse pointers, `max-width: 1024px`, and `prefers-reduced-motion`, and it bails out over scrollable descendants — see `shouldUseInertiaScroll` / `hasScrollableAncestor`.
+- **Project grid** (`components/project-grid.js`). Builds every card from `projectDetails` in `initProjectGrid()`, so `projectCards` is an exported `let` filled at init rather than a module-load `querySelectorAll`. Thumbnails are CSS backgrounds and fire no `load` event, so each card probes the same URL with `new Image()` (same cache entry, no second download) and wears the blurred `--preview-image` until it settles — on `error` as well as `load`, and skipping the pending state entirely when the probe is already `complete`.
 - **Project detail overlay** (`components/project-detail.js`). Opened by card index. Detail images are appended in batches of 5 (`projectImageBatchSize`) as the user scrolls, each starting as a blurred CSS `--preview-image` until the full image fires `load` and the wrapper gets `is-loaded`. A separate "Gallery" mode renders a looping horizontal stage from `detail.galleryImages`.
 - **Cursor follower / image magnifier** (`components/cursor-follower.js`). Replaces the native cursor on desktop, samples the hovered image's rendered geometry (`getRenderedImageMetrics`, `object-position` math) to show a zoom lens, and hides itself on touch or reduced motion.
 - **Sticky stacking** (`core/sections.js`, `components/drawings.js`). Sections and drawings cards are `position: sticky` and overlap via `--stack-section-overlap` / `--drawings-card-index`; JS only updates the index and scale variables.

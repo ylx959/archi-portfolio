@@ -6,6 +6,11 @@ function createProjectDetail(title, location, typology, category, year, descript
         category: category,
         year: year,
         description: description,
+        // The card thumbnail. It used to exist only as a background-image rule in
+        // project-grid.css, which is why adding a project meant editing the
+        // stylesheet as well; keeping it on the entry lets the grid build its own
+        // cards, so a project is described here and nowhere else.
+        cardImage: image,
         images: images || Array(10).fill(image),
         galleryImages: galleryImages || images || Array(10).fill(image),
         fullDescription: fullDescription || ""
@@ -117,25 +122,36 @@ const project6Description = [
     "It focuses on spatial innovation, conceptual transformation, and laboratory scales that respond to evolving societal needs."
 ];
 
+// The published projects, in the order they appear in the grid. project-grid.js
+// renders one card per entry, so this array is the only place that decides what
+// the site shows — there is no matching markup in index.html to keep in step.
 window.MINEPORT_PROJECT_DETAIL_DATA = [
-    createProjectDetail("Double Interaction", "Campus workshop", "Education", "Architecture", "2024 Summer", project1Description, "../assets/images/projects/project1/card/project1.jpg", project1DetailImages, project1GalleryImages, project1FullDescription),
-    createProjectDetail("Euphoria", "Senior Center", "Residential", "Architecture", "2023 Fall", ["Located in Toad Mountain, Taipei, this Senior Center uses dispersed volumes for resting, rehabilitation, social interaction, and reading, giving elderly users a freer and gentler daily rhythm."], "../assets/images/projects/project2/card/project2.jpg", ["1.jpg", "2-3.jpg", "2-4.jpg", "2-5.jpg", "2-6.png", "3.jpg", "4.jpg", "5.jpg", "5-1.jpg", "12.png", "13.png"].map(function (imageName) {
+    createProjectDetail("Double Interaction", "Campus workshop", "Education", "Architecture", "2024 Summer", project1Description, "../assets/images/projects/project1/card/project1.jpg?v=1", project1DetailImages, project1GalleryImages, project1FullDescription),
+    createProjectDetail("Euphoria", "Senior Center", "Residential", "Architecture", "2023 Fall", ["Located in Toad Mountain, Taipei, this Senior Center uses dispersed volumes for resting, rehabilitation, social interaction, and reading, giving elderly users a freer and gentler daily rhythm."], "../assets/images/projects/project2/card/project2.jpg?v=1", ["1.jpg", "2-3.jpg", "2-4.jpg", "2-5.jpg", "2-6.png", "3.jpg", "4.jpg", "5.jpg", "5-1.jpg", "12.png", "13.png"].map(function (imageName) {
         return "../assets/images/projects/project2/detail/" + imageName + "?v=5";
     }), ["1.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.png", "12.png", "13.png", "14.jpg", "15.jpg", "16.jpg", "17.jpg", "18.jpg", "19.jpg", "20.png", "21.jpg"].map(function (imageName) {
         return "../assets/images/projects/project2/gallery/" + imageName + "?v=12";
     }), "Following the slope and existing vegetation, the architecture creates a softer boundary between built space and landscape. Semi-outdoor corridors, courtyards, and shaded transitional areas allow movement to become part of the daily experience, giving users access to air, light, and greenery without relying on a single central hall.\n\nThe project emphasizes familiarity and legibility through variations in scale, openings, and materiality, helping residents recognize and navigate each area with ease. Communal spaces are balanced with quiet corners, supporting both social connection and moments of personal rest.\n\nUltimately, the senior center is imagined as a living community integrated with nature and everyday routines. Aging is treated not as a condition of isolation, but as a continuous experience supported by movement, care, and a gentle relationship with the surrounding environment."),
-    createProjectDetail("Light, Stone, Hope", "Church", "Religious", "Architecture", "2024 Fall", project3Description, "../assets/images/projects/project3/card/project3.jpg", project3DetailImages, project3GalleryImages, project3FullDescription),
-    createProjectDetail("Vertical Forest", "Collective Housing", "Residential", "Architecture", "2024 Spring", project4Description, "../assets/images/projects/project4/card/project4.jpg", project4DetailImages, project4GalleryImages, project4FullDescription),
-    createProjectDetail("Scene of Sense", "Children's Theater", "Culture", "Architecture", "2023 Winter", project5Description, "../assets/images/projects/project5/card/project5.jpg", project5DetailImages, project5GalleryImages, project5FullDescription),
-    createProjectDetail("Meditouch", "Interdisciplinary Lab", "Education", "Architecture", "2025 Summer", project6Description, "../assets/images/projects/project6/card/project6.jpg", project6DetailImages, project6GalleryImages, project6FullDescription),
-    createProjectDetail("Kitchenless", "COLLECTIVE HOUSING", "Residential", "Architecture", "2024 Winter", ["This kitchenless social housing concept optimizes space and cost while encouraging community through shared kitchens.", "It responds to food delivery, meal services, and sustainability trends with a more affordable, resource-efficient model for urban living."], "../assets/images/projects/project7/card/project7.jpg", [1, 6, 7, 9, 10, 11, 12, 14, 18].map(function (imageNumber) {
+    createProjectDetail("Light, Stone, Hope", "Church", "Religious", "Architecture", "2024 Fall", project3Description, "../assets/images/projects/project3/card/project3.jpg?v=1", project3DetailImages, project3GalleryImages, project3FullDescription),
+    createProjectDetail("Vertical Forest", "Collective Housing", "Residential", "Architecture", "2024 Spring", project4Description, "../assets/images/projects/project4/card/project4.jpg?v=1", project4DetailImages, project4GalleryImages, project4FullDescription),
+    createProjectDetail("Scene of Sense", "Children's Theater", "Culture", "Architecture", "2023 Winter", project5Description, "../assets/images/projects/project5/card/project5.jpg?v=1", project5DetailImages, project5GalleryImages, project5FullDescription),
+    createProjectDetail("Meditouch", "Interdisciplinary Lab", "Education", "Architecture", "2025 Summer", project6Description, "../assets/images/projects/project6/card/project6.jpg?v=1", project6DetailImages, project6GalleryImages, project6FullDescription),
+    createProjectDetail("Kitchenless", "COLLECTIVE HOUSING", "Residential", "Architecture", "2024 Winter", ["This kitchenless social housing concept optimizes space and cost while encouraging community through shared kitchens.", "It responds to food delivery, meal services, and sustainability trends with a more affordable, resource-efficient model for urban living."], "../assets/images/projects/project7/card/project7.jpg?v=1", [1, 6, 7, 9, 10, 11, 12, 14, 18].map(function (imageNumber) {
         return "../assets/images/projects/project7/detail/" + imageNumber + ".jpg?v=3";
     }), ["1.jpg", "1-1.jpg", "1-2.jpg", "1-3.jpg", "1-4.jpg", "2.jpg", "3.jpg", "4.jpg", "4-1.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "11-1.jpg", "12.jpg", "13.jpg", "14.jpg", "15.jpg", "16.jpg", "16-1.jpg", "17.jpg", "18.jpg", "18-2.jpg", "18-3.jpg", "18-4.jpg", "19.jpg", "20.jpg"].map(function (imageName) {
         return "../assets/images/projects/project7/gallery/" + imageName + "?v=5";
     }), "Cooking is reimagined as a collective routine that can produce social contact as well as daily support. Shared food spaces become places where residents meet, exchange help, and build small rituals of community, while the private units remain compact, efficient, and easier to maintain.\n\nThe proposal also responds to changing urban habits, where delivery services, prepared meals, and shared facilities alter the role of the domestic kitchen. Instead of duplicating the same infrastructure in every unit, resources are concentrated into communal areas that can serve more people with greater flexibility.\n\nIn this model, housing becomes more than a collection of rooms. It operates as a resource-conscious living system that reduces cost, limits redundancy, and creates stronger social ties through the shared use of space."),
-    createProjectDetail("Not Just a Museum", "Harbor Narrative Museum vol.1", "Culture", "Architecture", "2025 Fall", project8Description, "../assets/images/projects/project8/card/project8.jpg", project8DetailImages, project8GalleryImages, project8FullDescription),
-    createProjectDetail("Not Just a Museum", "Harbor Narrative Museum vol.2", "Culture", "Architecture", "2026 Summer", project9Description, "../assets/images/projects/project9/card/project9.jpg", project9DetailImages, project9GalleryImages, project9FullDescription),
-    createProjectDetail("Vertical Forest", "Collective Housing", "Residential", "Architecture", "2020-2024", project4Description, "../assets/images/projects/project4/card/project4.jpg", project4DetailImages, project4GalleryImages, project4FullDescription),
-    createProjectDetail("Stone Horizon House", "Los Angeles, USA", "Education", "Design", "2019-2026", ["A spatial design proposal centered on editing, restraint, and the visual weight of each surface condition.", "The composition seeks balance between tactile intimacy and overall formal control."], "../assets/images/projects/project5/card/project5.jpg", project5DetailImages, project5GalleryImages),
-    createProjectDetail("Meditouch", "Interdisciplinary Lab", "Religious", "Architecture", "2018-2022", project6Description, "../assets/images/projects/project6/card/project6.jpg", project6DetailImages, project6GalleryImages, project6FullDescription)
+    createProjectDetail("Not Just a Museum", "Harbor Narrative Museum vol.1", "Culture", "Architecture", "2025 Fall", project8Description, "../assets/images/projects/project8/card/project8.jpg?v=1", project8DetailImages, project8GalleryImages, project8FullDescription),
+    createProjectDetail("Not Just a Museum", "Harbor Narrative Museum vol.2", "Culture", "Architecture", "2026 Summer", project9Description, "../assets/images/projects/project9/card/project9.jpg?v=1", project9DetailImages, project9GalleryImages, project9FullDescription)
+];
+
+// Parked, not on the site. While the cards were static markup these three sat at
+// the end of the array above and were silently dropped by a slice(0, cardCount);
+// now that every entry becomes a card they have to be somewhere explicit instead.
+// All three reuse the images and titles of projects 4, 5 and 6. Move an entry back
+// into the array above to publish it — nothing else needs editing.
+window.MINEPORT_UNPUBLISHED_PROJECT_DATA = [
+    createProjectDetail("Vertical Forest", "Collective Housing", "Residential", "Architecture", "2020-2024", project4Description, "../assets/images/projects/project4/card/project4.jpg?v=1", project4DetailImages, project4GalleryImages, project4FullDescription),
+    createProjectDetail("Stone Horizon House", "Los Angeles, USA", "Education", "Design", "2019-2026", ["A spatial design proposal centered on editing, restraint, and the visual weight of each surface condition.", "The composition seeks balance between tactile intimacy and overall formal control."], "../assets/images/projects/project5/card/project5.jpg?v=1", project5DetailImages, project5GalleryImages),
+    createProjectDetail("Meditouch", "Interdisciplinary Lab", "Religious", "Architecture", "2018-2022", project6Description, "../assets/images/projects/project6/card/project6.jpg?v=1", project6DetailImages, project6GalleryImages, project6FullDescription)
 ];

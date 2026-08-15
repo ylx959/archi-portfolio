@@ -444,22 +444,6 @@
     transition: opacity 0.95s ease, transform 0.95s ease;
 }
 
-.image-grid-01 {
-    background-image: url("../../assets/images/projects/project1/card/project1.jpg");
-}
-
-.image-grid-02 {
-    background-image: url("../../assets/images/projects/project2/card/project2.jpg");
-}
-
-.image-grid-03 {
-    background-image: url("../../assets/images/projects/project3/card/project3.jpg");
-}
-
-.image-grid-07 {
-    background-image: url("../../assets/images/projects/project7/card/project7.jpg");
-}
-
 .project-image::before {
     content: "";
     position: absolute;
@@ -476,32 +460,19 @@
     opacity: 0.32;
 }
 
-.image-grid-08::before {
-    content: none;
-}
+/* Thumbnails themselves come from the data file — project-grid.js writes the
+   background-image on the element it builds. What is left here is only per-card
+   framing: `.image-grid-NN` (NN = the project's position, 1-based) is a hook for
+   the exceptions, and a project that needs no exception needs no rule.
 
+   Project 8's photograph puts its subject low and is busy enough that the dust
+   overlay muddies it. */
 .image-grid-08 {
-    background-image: url("../../assets/images/projects/project8/card/project8.jpg");
     background-position: center 78%;
 }
 
-.image-grid-09 {
-    background-image: url("../../assets/images/projects/project9/card/project9.jpg");
-}
-
-.image-grid-04,
-.image-grid-10 {
-    background-image: url("../../assets/images/projects/project4/card/project4.jpg");
-}
-
-.image-grid-05,
-.image-grid-11 {
-    background-image: url("../../assets/images/projects/project5/card/project5.jpg");
-}
-
-.image-grid-06,
-.image-grid-12 {
-    background-image: url("../../assets/images/projects/project6/card/project6.jpg");
+.image-grid-08::before {
+    content: none;
 }
 
 .project-card:hover .project-image {
@@ -728,21 +699,6 @@
         transform: translateY(0);
     }
 }
-
-.image-grid-01,
-.image-grid-02,
-.image-grid-03,
-.image-grid-04,
-.image-grid-05,
-.image-grid-06,
-.image-grid-07,
-.image-grid-08,
-.image-grid-09,
-.image-grid-10,
-.image-grid-11,
-.image-grid-12 { background-position: center center; }
-
-.image-grid-08 { background-position: center 78%; }
 
 @media (max-width: 1080px) {
     .project-grid {

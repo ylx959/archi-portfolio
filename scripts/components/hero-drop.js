@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "../core/constants.js?v=70";
+import { reducedMotionQuery } from "../core/constants.js?v=68161bbf";
 
 // Things in the hero intro arrive by falling into frame and bouncing to a stop.
 // This is an integrated fall rather than a keyframe with a bouncy easing curve:
