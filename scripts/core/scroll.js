@@ -1,7 +1,12 @@
-import { inertiaScrollSettings, nonDesktopScrollQuery, reducedMotionQuery, scrollDuration } from "./constants.js?v=68161bbf";
-import { body } from "./dom.js?v=7d47bc36";
-import { isEntered } from "./state.js?v=fe98a357";
-import { easeInOutCubic } from "./utils.js?v=660387f7";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
+import { gsap, ScrollTrigger } from "./animation.js";
+import { inertiaScrollSettings, nonDesktopScrollQuery, reducedMotionQuery, scrollDuration } from "./constants.js";
+import { isEntered } from "./state.js";
+
+// gsap's Power2 *is* cubic, so this is the same curve the hand-written
+// easeInOutCubic drew — there is no reason to keep a copy of it.
+const easeInOutCubic = gsap.parseEase("power2.inOut");
 
 // The hero owns the rules for when the page may scroll at all: while its intro
 // story is being scrubbed the wheel drives the story instead of the document.
@@ -41,175 +46,80 @@ function notifyScrollSettled(completed) {
     });
 }
 
-let activeScrollFrame = null;
+let lenis = null;
 
-let inertiaScrollFrame = null;
-
-let inertiaScrollTargetY = 0;
-
-let inertiaScrollCurrentY = 0;
-
-let isInertiaScrollAnimating = false;
+let isProgrammaticScrolling = false;
 
 let heroTouchStartY = null;
 
-function getMaxPageScroll() {
-    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+// Lenis is the page's scroll engine, but it is only allowed to smooth the wheel
+// where the hand-rolled inertia used to run: a coarse pointer, a narrow window
+// or a reduced-motion preference all get the browser's own scrolling. Lenis
+// stays alive in those cases regardless — smoothScrollToSection still animates
+// there, exactly as the old rAF tween did.
+function shouldSmoothWheel() {
+    return !reducedMotionQuery.matches && !nonDesktopScrollQuery.matches;
 }
 
-function clampPageScroll(value) {
-    return Math.max(0, Math.min(value, getMaxPageScroll()));
+function syncSmoothWheelMode() {
+    if (lenis) {
+        lenis.options.smoothWheel = shouldSmoothWheel();
+    }
 }
 
-export function syncInertiaScrollPosition() {
-    inertiaScrollCurrentY = window.scrollY;
-    inertiaScrollTargetY = window.scrollY;
+export function getLenis() {
+    return lenis;
 }
 
-export function cancelInertiaScroll() {
-    if (inertiaScrollFrame) {
-        window.cancelAnimationFrame(inertiaScrollFrame);
-        inertiaScrollFrame = null;
+// Stop the page scrolling and kill any momentum still in flight — used by the
+// overlays, which scroll their own content while the page must stay put.
+// Anything the visitor can actually scroll inside the overlay is left alone:
+// `allowNestedScroll` lets Lenis hand a wheel event to a scrollable descendant
+// that can still move in that direction, and swallow it once that descendant has
+// hit its end, so the page never shows through at the bottom of a long panel.
+export function pauseScroll() {
+    if (lenis) {
+        lenis.stop();
     }
-
-    isInertiaScrollAnimating = false;
-    syncInertiaScrollPosition();
 }
 
-function isScrollableElement(element) {
-    if (!element || element === document.body || element === document.documentElement) {
-        return false;
+export function resumeScroll() {
+    if (lenis) {
+        lenis.resize();
+        lenis.start();
     }
-
-    const styles = window.getComputedStyle(element);
-    const overflowY = styles.overflowY;
-    const canScrollY = overflowY === "auto" || overflowY === "scroll";
-
-    return canScrollY && element.scrollHeight > element.clientHeight + 1;
 }
 
-function hasScrollableAncestor(element) {
-    let node = element;
-
-    while (node && node !== document.body && node !== document.documentElement) {
-        if (isScrollableElement(node)) {
-            return true;
-        }
-
-        node = node.parentElement;
-    }
-
-    return false;
-}
-
-function shouldUseInertiaScroll(event) {
-    if (!isEntered() || reducedMotionQuery.matches || nonDesktopScrollQuery.matches) {
-        return false;
-    }
-
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey) {
-        return false;
-    }
-
-    if (body.classList.contains("is-project-detail-open") || scrollGate.isStoryActive() || scrollGate.isLocked()) {
-        return false;
-    }
-
-    if (event.target && hasScrollableAncestor(event.target)) {
-        return false;
-    }
-
-    return true;
-}
-
-function shouldBlockBackgroundScroll(event) {
-    return body.classList.contains("is-project-detail-open") &&
-        !(event.target && hasScrollableAncestor(event.target));
-}
-
-function getNormalizedWheelDeltaY(event) {
-    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
-        return event.deltaY * 16;
-    }
-
-    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
-        return event.deltaY * window.innerHeight;
-    }
-
-    return event.deltaY;
-}
-
-function stepInertiaScroll() {
-    const distance = inertiaScrollTargetY - inertiaScrollCurrentY;
-
-    if (Math.abs(distance) <= inertiaScrollSettings.settleDistance) {
-        inertiaScrollCurrentY = inertiaScrollTargetY;
-        window.scrollTo(0, inertiaScrollCurrentY);
-        inertiaScrollFrame = null;
-        isInertiaScrollAnimating = false;
+function abandonProgrammaticScroll() {
+    if (!isProgrammaticScrolling) {
         return;
     }
 
-    inertiaScrollCurrentY += distance * inertiaScrollSettings.lerp;
-    window.scrollTo(0, inertiaScrollCurrentY);
-    inertiaScrollFrame = window.requestAnimationFrame(stepInertiaScroll);
-}
-
-function handleInertiaWheel(event) {
-    if (!shouldUseInertiaScroll(event)) {
-        return false;
-    }
-
-    if (activeScrollFrame) {
-        window.cancelAnimationFrame(activeScrollFrame);
-        activeScrollFrame = null;
-        notifyScrollSettled(false);
-    }
-
-    if (!isInertiaScrollAnimating) {
-        syncInertiaScrollPosition();
-    }
-
-    event.preventDefault();
-    notifyWheelActivity();
-    inertiaScrollTargetY = clampPageScroll(inertiaScrollTargetY + (getNormalizedWheelDeltaY(event) * inertiaScrollSettings.wheelMultiplier));
-
-    if (!inertiaScrollFrame) {
-        isInertiaScrollAnimating = true;
-        inertiaScrollFrame = window.requestAnimationFrame(stepInertiaScroll);
-    }
-
-    return true;
+    isProgrammaticScrolling = false;
+    notifyScrollSettled(false);
 }
 
 function smoothScrollTo(targetY) {
-    cancelInertiaScroll();
-
-    const destinationY = clampPageScroll(targetY);
-    const startY = window.scrollY;
-    const distance = destinationY - startY;
-    const startTime = performance.now();
-
-    if (activeScrollFrame) {
-        window.cancelAnimationFrame(activeScrollFrame);
+    if (!lenis) {
+        window.scrollTo(0, targetY);
+        notifyScrollSettled(true);
+        return;
     }
 
-    function step(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / scrollDuration, 1);
-        const easedProgress = easeInOutCubic(progress);
-        window.scrollTo(0, startY + (distance * easedProgress));
-
-        if (progress < 1) {
-            activeScrollFrame = window.requestAnimationFrame(step);
-        } else {
-            activeScrollFrame = null;
-            syncInertiaScrollPosition();
+    abandonProgrammaticScroll();
+    isProgrammaticScrolling = true;
+    lenis.scrollTo(targetY, {
+        duration: scrollDuration / 1000,
+        easing: easeInOutCubic,
+        // The overlays pause Lenis while they are open; a nav click that closes
+        // one and scrolls in the same gesture must not be swallowed by the pause
+        // it is on its way out of.
+        force: true,
+        onComplete: function () {
+            isProgrammaticScrolling = false;
             notifyScrollSettled(true);
         }
-    }
-
-    activeScrollFrame = window.requestAnimationFrame(step);
+    });
 }
 
 export function smoothScrollToSection(section) {
@@ -227,67 +137,119 @@ export function smoothScrollToSection(section) {
     smoothScrollTo(targetY);
 }
 
+// The gate runs in the capture phase on window, which is the only place it can
+// sit: Lenis binds its own wheel listener to window in the bubble phase, so
+// stopping propagation here is what keeps a gated gesture from also being fed
+// into the smoothed scroll.
+function handleGateWheel(event) {
+    // A pinch-zoom arrives as a ctrl-wheel and a horizontal trackpad swipe as a
+    // shift-wheel. Neither is ours; keep Lenis off them so the browser can do
+    // its normal thing.
+    if (event.ctrlKey || event.metaKey || event.shiftKey) {
+        event.stopPropagation();
+        return;
+    }
+
+    if (scrollGate.isLocked()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+
+    if (scrollGate.scrub(event.deltaY)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+
+    // Past this point Lenis (or the browser) gets the event. A wheel while a
+    // programmatic scroll is still running means the visitor took the wheel back.
+    abandonProgrammaticScroll();
+    notifyWheelActivity();
+}
+
+function handleGateTouchStart(event) {
+    if (!scrollGate.isStoryActive() || !event.touches.length) {
+        heroTouchStartY = null;
+        return;
+    }
+
+    heroTouchStartY = event.touches[0].clientY;
+}
+
+function handleGateTouchMove(event) {
+    if (scrollGate.isLocked()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+
+    if (heroTouchStartY === null || !event.touches.length) {
+        return;
+    }
+
+    const currentY = event.touches[0].clientY;
+    const deltaY = heroTouchStartY - currentY;
+
+    if (scrollGate.scrub(deltaY)) {
+        event.preventDefault();
+        event.stopPropagation();
+        heroTouchStartY = currentY;
+    }
+}
+
 export function initScroll() {
-    window.addEventListener("wheel", function (event) {
-        if (scrollGate.isLocked()) {
-            event.preventDefault();
-            return;
-        }
+    lenis = new Lenis({
+        // Carried over from the hand-rolled inertia so the page keeps its weight:
+        // Lenis eases by `damp(current, target, lerp * 60, dt)`, which at 60fps
+        // closes 1 - e^-lerp of the gap per frame — the same 1.8% the old loop
+        // moved with `distance * 0.018`.
+        lerp: inertiaScrollSettings.lerp,
+        wheelMultiplier: inertiaScrollSettings.wheelMultiplier,
+        smoothWheel: shouldSmoothWheel(),
+        // Touch keeps the browser's own scrolling, as it did before: the phone
+        // layout turns the hero story off and never wanted the wheel hijack.
+        syncTouch: false,
+        // Overlay panels and the gallery scroll inside themselves; this is what
+        // replaces the old hasScrollableAncestor() walk.
+        allowNestedScroll: true,
+        autoRaf: false
+    });
 
-        if (shouldBlockBackgroundScroll(event)) {
-            event.preventDefault();
-            return;
-        }
+    // One clock for the whole site: gsap's ticker advances Lenis, and Lenis's
+    // resulting scroll position advances ScrollTrigger.
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add(function (time) {
+        lenis.raf(time * 1000);
+    });
 
-        if (scrollGate.scrub(event.deltaY)) {
-            event.preventDefault();
-            return;
-        }
-
-        if (handleInertiaWheel(event)) {
-            return;
-        }
-
-        notifyWheelActivity();
-    }, { passive: false });
-    window.addEventListener("touchstart", function (event) {
-        if (!scrollGate.isStoryActive() || !event.touches.length) {
-            heroTouchStartY = null;
-            return;
-        }
-
-        heroTouchStartY = event.touches[0].clientY;
-    }, { passive: true });
-    window.addEventListener("touchmove", function (event) {
-        if (scrollGate.isLocked()) {
-            event.preventDefault();
-            return;
-        }
-
-        if (shouldBlockBackgroundScroll(event)) {
-            event.preventDefault();
-            return;
-        }
-
-        if (heroTouchStartY === null || !event.touches.length) {
-            return;
-        }
-
-        const currentY = event.touches[0].clientY;
-        const deltaY = heroTouchStartY - currentY;
-
-        if (scrollGate.scrub(deltaY)) {
-            event.preventDefault();
-            heroTouchStartY = currentY;
-        }
-    }, { passive: false });
+    window.addEventListener("wheel", handleGateWheel, { passive: false, capture: true });
+    window.addEventListener("touchstart", handleGateTouchStart, { passive: true, capture: true });
+    window.addEventListener("touchmove", handleGateTouchMove, { passive: false, capture: true });
     window.addEventListener("touchend", function () {
         heroTouchStartY = null;
-    }, { passive: true });
-    window.addEventListener("keydown", function (event) {
-        if (event.key === "Home" || event.key === "End" || event.key === "PageUp" || event.key === "PageDown" || event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === " ") {
-            cancelInertiaScroll();
-        }
-    }, { passive: true });
-    window.addEventListener("resize", syncInertiaScrollPosition);
+    }, { passive: true, capture: true });
+
+    // Until the name form is submitted the page must not scroll at all. The
+    // `is-locked` class alone is no longer enough to enforce that: it works by
+    // putting `overflow: hidden` on html, and Lenis moves the page with
+    // window.scrollTo(), which overflow does not stop. So the engine itself
+    // starts stopped — while it is, it swallows the wheel outright, and the hero
+    // still gets its scrub because the gate above runs ahead of Lenis.
+    if (!isEntered()) {
+        lenis.stop();
+    }
+
+    // Everything measured before this point was measured against a document that
+    // could not scroll and was blurred out of layout.
+    document.addEventListener("portfolio:entered", function () {
+        lenis.resize();
+        lenis.start();
+        ScrollTrigger.refresh();
+    });
+
+    if (typeof reducedMotionQuery.addEventListener === "function") {
+        reducedMotionQuery.addEventListener("change", syncSmoothWheelMode);
+        nonDesktopScrollQuery.addEventListener("change", syncSmoothWheelMode);
+    }
 }

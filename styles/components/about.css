@@ -5,7 +5,7 @@
     margin-top: 0;
     padding: 80px var(--project-shell-padding) 120px;
     min-height: calc(100vh + 56px);
-    background: #ffffff;
+    background: var(--paper);
     transform: translate3d(0, calc((1 - var(--section-separate, 0)) * var(--section-overlap) * -1), 0);
     will-change: transform;
     backface-visibility: hidden;
@@ -60,7 +60,7 @@
     font-weight: 300;
     line-height: 0.98;
     letter-spacing: 0;
-    color: #171514;
+    color: var(--ink);
     /* The highlighted words react to hover, so dragging across the line should
        drive that rather than paint a text selection over it. */
     -webkit-user-select: none;
@@ -74,7 +74,7 @@
 .about-title-choice {
     display: inline-block;
     position: relative;
-    color: #171514;
+    color: var(--ink);
     cursor: default;
     padding: 0 0.035em;
     transition: color 0.28s ease, transform 0.28s ease, font-weight 0.28s ease;
@@ -108,7 +108,7 @@
 
 .about-title-choice:hover,
 .about-title:focus-visible .about-title-choice {
-    color: #171514;
+    color: var(--ink);
     font-weight: 520;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .about-card-front {
-    background: #ffffff;
+    background: var(--paper);
 }
 
 .about-image {
@@ -175,10 +175,10 @@
     justify-content: center;
     padding: clamp(18px, 3vw, 34px);
     background:
-        radial-gradient(circle at center, rgba(255, 255, 255, 0.035), transparent 42%),
+        radial-gradient(circle at center, rgb(var(--paper-rgb) / 0.035), transparent 42%),
         linear-gradient(135deg, #191919, #101010 68%, #161616);
     color: #f2f2f2;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+    box-shadow: inset 0 0 0 1px rgb(var(--paper-rgb) / 0.025);
     transform: rotateY(180deg);
 }
 
@@ -190,14 +190,14 @@
     bottom: 16px;
     width: 5px;
     background:
-        radial-gradient(circle, rgba(0, 0, 0, 0.42) 0 3px, transparent 3.5px) center top / 5px 25% repeat-y;
+        radial-gradient(circle, rgb(var(--shadow-rgb) / 0.42) 0 3px, transparent 3.5px) center top / 5px 25% repeat-y;
     opacity: 0.76;
 }
 
 .about-card-back-label,
 .about-card-back-spine {
     position: absolute;
-    color: rgba(255, 255, 255, 0.32);
+    color: rgb(var(--paper-rgb) / 0.32);
     font-size: 0.62rem;
     font-weight: 400;
     letter-spacing: 0.12em;
@@ -241,7 +241,7 @@
     line-height: 1;
     text-transform: lowercase;
     text-decoration: none;
-    text-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    text-shadow: 0 8px 22px rgb(var(--shadow-rgb) / 0.28);
     transform: rotate(-2deg);
     transition: color 0.32s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -252,7 +252,7 @@
 
 .about-instagram-link:hover,
 .about-instagram-link:focus-visible {
-    color: #ffffff;
+    color: var(--paper);
     transform: rotate(-2deg) scale(1.04);
     outline: none;
 }
@@ -296,13 +296,13 @@
     font-size: 0.96rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #8b857e;
+    color: var(--ink-muted);
     transition: color 0.3s ease;
 }
 
 .about-info-toggle:hover .about-info-label,
 .about-info-toggle:focus-visible .about-info-label {
-    color: #171514;
+    color: var(--ink);
 }
 
 .about-info-toggle:focus-visible {

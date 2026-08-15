@@ -1,6 +1,7 @@
-import { body } from "../core/dom.js?v=7d47bc36";
-import { getCurrentSection } from "../core/sections.js?v=b91de58a";
-import { isEntered } from "../core/state.js?v=fe98a357";
+import { gsap } from "../core/animation.js";
+import { body } from "../core/dom.js";
+import { getCurrentSection } from "../core/sections.js";
+import { isEntered } from "../core/state.js";
 
 const cursorFollower = document.getElementById("cursorFollower");
 
@@ -70,10 +71,10 @@ function setupCursorFollower() {
         ".drawings-title-char"
     ].join(", ");
     let idleTimer = null;
-    let cursorFrame = null;
     let isEnabled = false;
     const imageMagnifierScale = 2.25;
     let isMagnifierLockedUntilProjects = false;
+    let isCursorAnimating = false;
     const cursorPosition = {
         x: -120,
         y: -120,
@@ -87,35 +88,42 @@ function setupCursorFollower() {
         cursorFollower.style.setProperty("--cursor-y", cursorPosition.y + "px");
     }
 
-    function animateCursorFollower() {
-        if (!isEnabled) {
-            cursorFrame = null;
-            return;
-        }
-
+    // The follower keeps its own lerp — a tween would have to be retargeted on
+    // every pointermove, and this is one line of maths — but it runs on gsap's
+    // ticker rather than a requestAnimationFrame loop of its own, so the whole
+    // page still advances on a single clock.
+    function stepCursorFollower() {
         const ease = cursorFollower.classList.contains("is-interactive") ? 0.085 : 0.06;
         const deltaX = cursorPosition.targetX - cursorPosition.x;
         const deltaY = cursorPosition.targetY - cursorPosition.y;
 
-        cursorPosition.x += deltaX * ease;
-        cursorPosition.y += deltaY * ease;
-        renderCursorFollower();
-
-        if (Math.abs(deltaX) > 0.08 || Math.abs(deltaY) > 0.08) {
-            cursorFrame = window.requestAnimationFrame(animateCursorFollower);
+        if (Math.abs(deltaX) <= 0.08 && Math.abs(deltaY) <= 0.08) {
+            cursorPosition.x = cursorPosition.targetX;
+            cursorPosition.y = cursorPosition.targetY;
+            renderCursorFollower();
+            stopCursorAnimation();
             return;
         }
 
-        cursorPosition.x = cursorPosition.targetX;
-        cursorPosition.y = cursorPosition.targetY;
+        cursorPosition.x += deltaX * ease;
+        cursorPosition.y += deltaY * ease;
         renderCursorFollower();
-        cursorFrame = null;
+    }
+
+    function stopCursorAnimation() {
+        if (isCursorAnimating) {
+            isCursorAnimating = false;
+            gsap.ticker.remove(stepCursorFollower);
+        }
     }
 
     function requestCursorAnimation() {
-        if (!cursorFrame) {
-            cursorFrame = window.requestAnimationFrame(animateCursorFollower);
+        if (isCursorAnimating || !isEnabled) {
+            return;
         }
+
+        isCursorAnimating = true;
+        gsap.ticker.add(stepCursorFollower);
     }
 
     function isCursorHintAllowed() {
@@ -439,10 +447,12 @@ function setupCursorFollower() {
         cursorPosition.targetX = event.clientX;
         cursorPosition.targetY = event.clientY;
 
+        // First move of the session: land on the pointer rather than easing in
+        // from the off-screen resting position.
         if (!cursorPosition.hasMoved) {
+            cursorPosition.hasMoved = true;
             cursorPosition.x = event.clientX;
             cursorPosition.y = event.clientY;
-            cursorPosition.hasMoved = true;
             renderCursorFollower();
         }
 
@@ -484,10 +494,7 @@ function setupCursorFollower() {
         cursorFollower.classList.remove("is-active", "is-idle", "is-interactive");
         clearImageMagnifier();
         window.clearTimeout(idleTimer);
-        if (cursorFrame) {
-            window.cancelAnimationFrame(cursorFrame);
-            cursorFrame = null;
-        }
+        stopCursorAnimation();
         cursorPosition.hasMoved = false;
     }
 

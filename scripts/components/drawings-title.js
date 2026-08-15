@@ -1,4 +1,5 @@
-import { reducedMotionQuery } from "../core/constants.js?v=68161bbf";
+import { gsap, ScrollTrigger } from "../core/animation.js";
+import { reducedMotionQuery } from "../core/constants.js";
 
 // "THE MOMENTS / that moved me" — the heading is split into per-character spans
 // so it can do two things: float in and out with the section (that part is pure
@@ -40,7 +41,7 @@ let pointerX = -9999;
 let pointerY = -9999;
 let hasPointer = false;
 let measureQueued = false;
-let renderFrame = null;
+let isPressureAnimating = false;
 
 function wrapTitleChars(text, startIndex) {
     return Array.from(text).map(function (char, offset) {
@@ -126,8 +127,6 @@ function isTitleVisible() {
 }
 
 function applyPressure() {
-    renderFrame = null;
-
     // Fold a pending re-measure into this frame. Scrolling moves the sticky
     // heading, so stale centres would lag the pointer by a character or two.
     if (measureQueued) {
@@ -135,6 +134,7 @@ function applyPressure() {
     }
 
     if (!charCenters.length || charCenters.length !== charElements.length) {
+        stopPressureRender();
         return;
     }
 
@@ -180,18 +180,29 @@ function applyPressure() {
         }
     }
 
-    // Keep the loop alive only while something is still moving.
-    if (!isSettled) {
-        renderFrame = window.requestAnimationFrame(applyPressure);
+    // Stop paying for frames once every character has reached its target.
+    if (isSettled) {
+        stopPressureRender();
     }
 }
 
+function stopPressureRender() {
+    if (isPressureAnimating) {
+        isPressureAnimating = false;
+        gsap.ticker.remove(applyPressure);
+    }
+}
+
+// On gsap's ticker rather than a requestAnimationFrame loop of its own: the
+// heading is measured against the same frame the sticky stack and Lenis wrote,
+// and there is one clock in the page instead of four.
 function requestPressureRender() {
-    if (renderFrame) {
+    if (isPressureAnimating) {
         return;
     }
 
-    renderFrame = window.requestAnimationFrame(applyPressure);
+    isPressureAnimating = true;
+    gsap.ticker.add(applyPressure);
 }
 
 function handlePointerMove(event) {
@@ -235,6 +246,14 @@ export function initDrawingsTitle() {
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerleave", releasePressure, { passive: true });
     window.addEventListener("blur", releasePressure);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", queueMeasure);
+    // On the same tick as Lenis and the sticky stack. The heading is sticky, so
+    // scrolling moves the character boxes the pointer effect is measured
+    // against; invalidating the cache from a scroll event of its own would
+    // invalidate it a frame after the frame that moved them.
+    ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        onUpdate: handleScroll,
+        onRefresh: queueMeasure
+    });
 }

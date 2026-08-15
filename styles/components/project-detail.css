@@ -22,7 +22,7 @@
 .project-detail-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(18, 17, 16, 0.38);
+    background: rgb(var(--ink-rgb) / 0.38);
     backdrop-filter: blur(0);
     -webkit-backdrop-filter: blur(0);
     opacity: 0;
@@ -60,8 +60,8 @@
     padding: 72px 12px 12px;
     overflow: hidden;
     border-radius: 14px;
-    background: #ffffff;
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.22);
+    background: var(--paper);
+    box-shadow: 0 28px 80px rgb(var(--shadow-rgb) / 0.22);
     opacity: 0;
     transform: translateY(20px);
     will-change: opacity, transform;
@@ -71,13 +71,13 @@
 .project-detail-overlay.is-active .project-detail-shell {
     opacity: 1;
     transform: translateY(0);
-    box-shadow: 0 34px 90px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 34px 90px rgb(var(--shadow-rgb) / 0.24);
 }
 
 .project-detail-overlay.is-closing .project-detail-shell {
     opacity: 0;
     transform: translateY(14px);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.14);
+    box-shadow: 0 18px 44px rgb(var(--shadow-rgb) / 0.14);
     transition-duration: 0.22s;
     transition-timing-function: ease;
 }
@@ -111,7 +111,7 @@
     border: none;
     border-radius: 12px;
     background: #f0efec;
-    color: #141311;
+    color: var(--ink-strong);
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
@@ -135,7 +135,7 @@
 .project-detail-close:focus-visible {
     background: #e7e4de;
     color: #6f645c;
-    box-shadow: 0 8px 18px rgba(20, 19, 17, 0.08);
+    box-shadow: 0 8px 18px rgb(var(--ink-rgb) / 0.08);
 }
 
 .project-detail-close:hover .project-detail-close-glyph,
@@ -159,7 +159,7 @@
 .project-detail-badge.is-active {
     background: #e7e4de;
     color: #6f645c;
-    box-shadow: 0 8px 18px rgba(20, 19, 17, 0.08);
+    box-shadow: 0 8px 18px rgb(var(--ink-rgb) / 0.08);
     outline: none;
 }
 
@@ -167,7 +167,7 @@
 .project-detail-badge.is-active:focus-visible {
     background: #ddd8cf;
     color: #5f554e;
-    box-shadow: 0 10px 20px rgba(20, 19, 17, 0.1);
+    box-shadow: 0 10px 20px rgb(var(--ink-rgb) / 0.1);
 }
 
 .project-detail-badge.is-scrolling .project-detail-badge-text {
@@ -227,7 +227,7 @@
 .project-detail-meta {
     display: grid;
     gap: 4px;
-    color: #8f8d89;
+    color: var(--ink-muted);
     font-size: 0.94rem;
     font-weight: 600;
     letter-spacing: 0.14em;
@@ -239,7 +239,7 @@
     gap: 18px;
     max-width: 420px;
     min-width: 0;
-    color: #1f1d1b;
+    color: var(--ink-soft);
     font-size: 1rem;
     line-height: 1.36;
 }
@@ -284,7 +284,7 @@
 
 .project-detail-readmore:hover,
 .project-detail-readmore:focus-visible {
-    color: #1f1d1b;
+    color: var(--ink-soft);
     opacity: 1;
     outline: none;
 }
@@ -315,7 +315,7 @@
     overflow-y: auto;
     padding-right: 4px;
     align-content: start;
-    background: #ffffff;
+    background: var(--paper);
     opacity: 0;
     transform: translateY(18px);
     transition: opacity 0.42s ease 0.2s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
@@ -367,7 +367,7 @@
     margin: 0;
     border-radius: 6px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--paper);
     box-shadow: none;
     opacity: 0;
     transform: translateY(10px);
@@ -395,7 +395,7 @@
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgb(var(--paper-rgb) / 0.12);
     pointer-events: none;
     transition: opacity 0.42s ease;
 }
@@ -448,7 +448,7 @@
     min-width: 0;
     min-height: 0;
     height: 100%;
-    background: #ffffff;
+    background: var(--paper);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -461,7 +461,7 @@
     height: 100%;
     overflow: hidden;
     border-radius: 6px;
-    background: #ffffff;
+    background: var(--paper);
 }
 
 .project-detail-gallery-stage-track {
@@ -471,7 +471,7 @@
     width: 100%;
     height: 100%;
     padding-inline: 0;
-    background: #ffffff;
+    background: var(--paper);
     transition: transform 0.48s cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 
@@ -485,7 +485,7 @@
     min-width: 100%;
     max-width: 100%;
     height: 100%;
-    background: #ffffff;
+    background: var(--paper);
     overflow: hidden;
 }
 
@@ -498,7 +498,7 @@
     height: 100%;
     max-height: 100%;
     object-fit: contain;
-    background: #ffffff;
+    background: var(--paper);
     border-radius: 6px;
     overflow: hidden;
     box-shadow: none;
@@ -537,9 +537,9 @@
 
 .project-detail-gallery-nav-button:hover,
 .project-detail-gallery-nav-button:focus-visible {
-    background: rgba(24, 21, 19, 0.68);
+    background: rgb(var(--ink-rgb) / 0.68);
     transform: translateY(-1px);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 26px rgb(var(--shadow-rgb) / 0.2);
     outline: none;
 }
 
@@ -554,12 +554,12 @@
 
 .project-detail-gallery-nav-button:first-child:hover .project-detail-gallery-nav-glyph,
 .project-detail-gallery-nav-button:first-child:focus-visible .project-detail-gallery-nav-glyph {
-    animation: drawings-arrow-scroll-left 0.52s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
+    animation: gallery-arrow-scroll-left 0.52s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
 }
 
 .project-detail-gallery-nav-button:last-child:hover .project-detail-gallery-nav-glyph,
 .project-detail-gallery-nav-button:last-child:focus-visible .project-detail-gallery-nav-glyph {
-    animation: drawings-arrow-scroll-right 0.52s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
+    animation: gallery-arrow-scroll-right 0.52s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
 }
 
 .drawings-detail-overlay {
@@ -587,7 +587,7 @@
 .drawings-detail-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(18, 17, 16, 0.38);
+    background: rgb(var(--ink-rgb) / 0.38);
     opacity: 0;
     transition: opacity 0.28s ease;
 }
@@ -604,7 +604,7 @@
     border-radius: 14px;
     opacity: 0;
     transform: translateY(20px);
-    background: #ffffff;
+    background: var(--paper);
     transition: opacity 0.32s ease, transform 0.36s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -627,11 +627,11 @@
     border: none;
     border-radius: 11px;
     background: #f0efec;
-    color: #141311;
+    color: var(--ink-strong);
     line-height: 1;
     cursor: pointer;
     overflow: hidden;
-    box-shadow: 0 12px 28px rgba(20, 19, 17, 0.12);
+    box-shadow: 0 12px 28px rgb(var(--ink-rgb) / 0.12);
     transition: background-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -639,7 +639,7 @@
 .drawings-detail-close:focus-visible {
     background: #e7e4de;
     color: #6f645c;
-    box-shadow: 0 8px 18px rgba(20, 19, 17, 0.08);
+    box-shadow: 0 8px 18px rgb(var(--ink-rgb) / 0.08);
     outline: none;
 }
 
@@ -661,8 +661,8 @@
     max-height: var(--drawings-detail-max-height);
     object-fit: contain;
     border-radius: 10px;
-    background: #ffffff;
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.22);
+    background: var(--paper);
+    box-shadow: 0 28px 80px rgb(var(--shadow-rgb) / 0.22);
 }
 
 .project-detail-gallery-image {
@@ -673,7 +673,7 @@
     height: auto;
     min-height: 0;
     object-fit: contain;
-    background: #ffffff;
+    background: var(--paper);
     vertical-align: top;
     opacity: 0;
     filter: blur(10px);
@@ -845,6 +845,53 @@ body.is-project-detail-open .project-showcase {
 
     100% {
         transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Lives here because the gallery's prev/next arrows are the only thing that
+   plays it. It used to sit in drawings.css next to a set of arrow rules that no
+   longer exist, so a change to the drawings section could silently break the
+   project overlay. */
+@keyframes gallery-arrow-scroll-left {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateX(16px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+@keyframes gallery-arrow-scroll-right {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateX(16px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
         opacity: 1;
     }
 }

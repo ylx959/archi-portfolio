@@ -5,6 +5,25 @@
 }
 
 :root {
+    /* The site's two inks, and the shadow they cast. Everything that used to be
+       written #ffffff / #171514 / rgba(0,0,0,…) goes through these — there were
+       164 colour literals across the nine stylesheets and no token for any of
+       them, so a change of ink meant a search across every file.
+       The -rgb triples exist so a translucent variant can reuse the same base:
+       `rgb(var(--ink-rgb) / 0.08)` rather than a fourth spelling of the colour. */
+    --paper-rgb: 255 255 255;
+    --ink-rgb: 23 21 20;
+    --shadow-rgb: 0 0 0;
+    --paper: rgb(var(--paper-rgb));
+    --ink: rgb(var(--ink-rgb));
+    --shadow: rgb(var(--shadow-rgb));
+    /* Three tiers of ink, not one. They were eleven hex literals that looked
+       identical in a swatch but are not: --ink-strong sits 2.4% darker than
+       --ink and --ink-soft 3.1% lighter, which is visible on a headline. The
+       spellings within each tier differed by under 1.2% and were pure drift. */
+    --ink-strong: #11100f;
+    --ink-soft: #1f1d1b;
+    --ink-muted: #8a867f;
     --project-shell-padding: 28px;
     --project-card-scale: 0.985;
     --project-column-count: 3;
@@ -48,8 +67,8 @@ body.is-locked .anchor-placeholder {
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-    background: #ffffff;
-    color: #171514;
+    background: var(--paper);
+    color: var(--ink);
 }
 
 a {

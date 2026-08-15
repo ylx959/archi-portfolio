@@ -1,9 +1,10 @@
-import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js?v=68161bbf";
-import { body, html } from "../core/dom.js?v=7d47bc36";
-import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js?v=13019963";
-import { getCurrentSection } from "../core/sections.js?v=b91de58a";
-import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js?v=fe98a357";
-import { easeOutBack, formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js?v=660387f7";
+import { gsap } from "../core/animation.js";
+import { HERO_PHASES, coarsePointerQuery, heroScrambleLowercase, reducedMotionQuery } from "../core/constants.js";
+import { body, html } from "../core/dom.js";
+import { onScrollSettle, setScrollGate, smoothScrollToSection } from "../core/scroll.js";
+import { getCurrentSection } from "../core/sections.js";
+import { getDisplayName, isEntered, markEntered, setDisplayName } from "../core/state.js";
+import { formatDisplayName, isMobileHeroMode, scrambleHeroText, scrambleHeroTextOut } from "../core/utils.js";
 
 export const enterForm = document.getElementById("enterForm");
 
@@ -34,37 +35,37 @@ export const heroState = {
 //   act 1 (before entering) opens the collapsed card out to full screen,
 //   act 2 (after the name is submitted) shrinks it into the comma.
 // `target` is where the wheel has asked to be, `progress` is what is rendered,
-// `distance` is how much wheel delta one full act costs.
+// `distance` is how much wheel delta one full act costs, `duration` how long the
+// render takes to catch up once the wheel stops.
 const heroExpandTrack = {
     progress: 0,
     target: 0,
-    frame: null,
-    // low on purpose: the card keeps easing after the wheel stops, which is the
+    tween: null,
+    // long on purpose: the card keeps easing after the wheel stops, which is the
     // whole point of scrubbing it rather than tracking the wheel one to one
-    lerp: 0.055,
-    distance: 1400,
-    settleDistance: 0.0015
+    duration: 0.9,
+    distance: 1400
 };
 
 const heroStoryTrack = {
     progress: 0,
     target: 0,
-    frame: null,
-    lerp: 0.14,
-    distance: 1120,
-    settleDistance: 0.0015
+    tween: null,
+    duration: 0.45,
+    distance: 1120
 };
+
+// The overshoot the side copy is pulled through. gsap's back.out(n) is the same
+// curve the hand-written easeOutBack drew, so it is parsed once here rather than
+// kept as a second implementation in utils.js.
+const magneticEase = gsap.parseEase("back.out(2.8)");
 
 // Where the squeeze bottoms out: past this the pull is capped, so holding the
 // copy any longer just looks stuck. This is the point the rubber band lets go —
 // deliberately before the comma has finished forming.
 const heroStoryReleaseProgress = 0.82;
 
-const heroTimers = {
-    morph: null,
-    unlock: null,
-    autoScroll: null
-};
+const heroTimers = {};
 
 // The enter form only becomes usable once the media has finished expanding.
 let isHeroExpandComplete = false;
@@ -80,6 +81,8 @@ const heroIntroTiming = {
     thanksHold: 1400,
     // the drop reports when it lands; this is only the fallback
     cardDropTimeout: 2600,
+    // the hop-in runs ~4.0s; this is only the floor if it never reports
+    ampersandTimeout: 5000,
     imageTimeout: 9000
 };
 
@@ -131,7 +134,7 @@ function completeHeroStory() {
         return;
     }
 
-    clearHeroStoryCompletionTimer();
+    clearHeroTimer("autoScroll");
     heroState.isAwaitingAutoScroll = true;
     scheduleHeroTimer("autoScroll", 1300, function () {
         smoothScrollToSection(projectsSection);
@@ -186,11 +189,20 @@ function scrambleLineOut(duration) {
     }));
 }
 
-// Hands the card off to hero-card-drop.js and waits for it to land. The timeout
-// is a floor, not the schedule: if that component is missing the intro still runs.
-function dropHeroPart(target) {
+// Hands a piece of the intro to whichever component owns it and waits for it to
+// land. The timeout is a floor, not the schedule: if that component is missing
+// the intro still runs.
+//
+// It is a gsap.delayedCall rather than a setTimeout, and that matters. Every
+// piece it waits on animates on gsap's ticker, which is requestAnimationFrame —
+// so a backgrounded tab or a stalled machine throttles the animation. A
+// wall-clock timeout would carry on regardless and hand the page over while the
+// ampersand was still mid-hop, unlocking the scroll before it had landed. On the
+// same clock the fallback cannot overtake the thing it is insuring.
+function dropHeroPart(target, timeout) {
     return new Promise(function (resolve) {
         let isSettled = false;
+        let fallback = null;
 
         function settle(event) {
             if (isSettled || (event && event.detail && event.detail.target !== target)) {
@@ -198,12 +210,17 @@ function dropHeroPart(target) {
             }
 
             isSettled = true;
+
+            if (fallback) {
+                fallback.kill();
+            }
+
             document.removeEventListener("portfolio:hero-dropped", settle);
             resolve();
         }
 
         document.addEventListener("portfolio:hero-dropped", settle);
-        window.setTimeout(settle, heroIntroTiming.cardDropTimeout);
+        fallback = gsap.delayedCall((timeout || heroIntroTiming.cardDropTimeout) / 1000, settle);
         document.dispatchEvent(new CustomEvent("portfolio:hero-drop", { detail: { target: target } }));
     });
 }
@@ -279,6 +296,11 @@ function startHeroIntroSequence() {
             heroExpandWords[1].textContent = "&";
             heroExpandWords[2].textContent = "Design";
             return dropHeroPart("headline");
+        })
+        .then(function () {
+            // Only once the two words are down: the ampersand hops in from off
+            // the right edge and over "Design" into the gap they left.
+            return dropHeroPart("ampersand", heroIntroTiming.ampersandTimeout);
         })
         .then(function () {
             isHeroIntroComplete = true;
@@ -409,42 +431,22 @@ function resetMobileHeroViewport() {
     });
 }
 
-function clearHeroStoryCompletionTimer() {
-    if (heroTimers.autoScroll) {
-        window.clearTimeout(heroTimers.autoScroll);
-        heroTimers.autoScroll = null;
-    }
-}
-
-function clearHeroStoryUnlockTimer() {
-    if (heroTimers.unlock) {
-        window.clearTimeout(heroTimers.unlock);
-        heroTimers.unlock = null;
-    }
-}
-
-function clearHeroMorphTimer() {
-    if (heroTimers.morph) {
-        window.clearTimeout(heroTimers.morph);
-        heroTimers.morph = null;
-    }
-}
-
-function scheduleHeroTimer(timerKey, delay, callback) {
-    if (!Object.prototype.hasOwnProperty.call(heroTimers, timerKey)) {
-        return null;
-    }
-
+function clearHeroTimer(timerKey) {
     if (heroTimers[timerKey]) {
-        window.clearTimeout(heroTimers[timerKey]);
+        heroTimers[timerKey].kill();
+        heroTimers[timerKey] = null;
     }
+}
 
-    heroTimers[timerKey] = window.setTimeout(function () {
+// On gsap's clock rather than setTimeout's, so the whole hero — scrub, drop and
+// the waits between them — stops and resumes as one thing when the tab is
+// backgrounded, instead of the timers running on while the animation is frozen.
+function scheduleHeroTimer(timerKey, delay, callback) {
+    clearHeroTimer(timerKey);
+    heroTimers[timerKey] = gsap.delayedCall(delay / 1000, function () {
         heroTimers[timerKey] = null;
         callback();
-    }, delay);
-
-    return heroTimers[timerKey];
+    });
 }
 
 function syncHeroPhaseClasses() {
@@ -473,9 +475,9 @@ function resetHeroFlowState() {
     cancelHeroScrub(heroExpandTrack);
     cancelHeroScrub(heroStoryTrack);
     heroState.isAwaitingAutoScroll = false;
-    clearHeroMorphTimer();
-    clearHeroStoryUnlockTimer();
-    clearHeroStoryCompletionTimer();
+    clearHeroTimer("morph");
+    clearHeroTimer("unlock");
+    clearHeroTimer("autoScroll");
 }
 
 // Held still whenever the wheel has nothing left to scrub but the page should
@@ -531,7 +533,7 @@ function writeStoryProgress(progress) {
 
     const basePull = heroStoryTrack.progress;
     const magneticOvershoot = heroStoryTrack.progress >= 0.64
-        ? easeOutBack((heroStoryTrack.progress - 0.5) / 0.5, 2.8)
+        ? magneticEase((heroStoryTrack.progress - 0.5) / 0.5)
         : 0;
     const magneticPull = Math.min(basePull + (magneticOvershoot * 0.36), 1.38);
     const magneticScale = 1 - (Math.min(magneticPull, 1.24) * 0.22);
@@ -542,7 +544,7 @@ function writeStoryProgress(progress) {
     syncHeroPhaseClasses();
 
     if (heroStoryTrack.progress < 1) {
-        clearHeroStoryCompletionTimer();
+        clearHeroTimer("autoScroll");
     }
 }
 
@@ -573,56 +575,36 @@ function getActiveHeroTrack() {
     return isEntered() ? heroStoryTrack : heroExpandTrack;
 }
 
-function stepHeroTrack(track, write, onComplete, now) {
-    const distance = track.target - track.progress;
-
-    if (Math.abs(distance) <= track.settleDistance) {
-        track.frame = null;
-        track.lastFrame = 0;
-        write(track.target);
-
-        if (track.progress >= 1) {
-            onComplete();
-        }
-
-        return;
-    }
-
-    // `lerp` is written as a per-60Hz-frame fraction, so convert it for however
-    // long this frame actually was. Without this the scrub runs at double speed
-    // on a 120Hz display and stutters whenever a frame is late.
-    const elapsed = track.lastFrame ? Math.min(64, now - track.lastFrame) : 16.667;
-    const factor = 1 - Math.pow(1 - track.lerp, Math.max(elapsed, 1) / 16.667);
-
-    track.lastFrame = now;
-    write(track.progress + (distance * factor));
-    track.frame = window.requestAnimationFrame(function (nextNow) {
-        stepHeroTrack(track, write, onComplete, nextNow);
-    });
-}
-
+// A wheel event retargets the tween already in flight rather than stacking
+// another on top of it, which is what `overwrite` buys. gsap also does the
+// frame-rate normalisation the hand-rolled loop had to do for itself — without
+// it the scrub ran at double speed on a 120Hz display.
 function startHeroTrack(track) {
-    if (track.frame) {
-        return;
-    }
-
     const isStory = track === heroStoryTrack;
+    const write = isStory ? writeStoryProgress : writeExpandProgress;
 
-    track.lastFrame = 0;
-    track.frame = window.requestAnimationFrame(function (now) {
-        stepHeroTrack(
-            track,
-            isStory ? writeStoryProgress : writeExpandProgress,
-            isStory ? completeHeroStory : completeHeroExpand,
-            now
-        );
+    track.tween = gsap.to(track, {
+        progress: track.target,
+        duration: track.duration,
+        ease: "power2.out",
+        overwrite: true,
+        onUpdate: function () {
+            write(track.progress);
+        },
+        onComplete: function () {
+            write(track.progress);
+
+            if (track.progress >= 1) {
+                (isStory ? completeHeroStory : completeHeroExpand)();
+            }
+        }
     });
 }
 
 function cancelHeroScrub(track) {
-    if (track.frame) {
-        window.cancelAnimationFrame(track.frame);
-        track.frame = null;
+    if (track.tween) {
+        track.tween.kill();
+        track.tween = null;
     }
 
     track.target = track.progress;
@@ -640,7 +622,7 @@ export function scrubHeroStory(delta) {
     // While the eased progress is still catching up to the target the wheel stays
     // captured, otherwise the page would start scrolling underneath an animation
     // that has not finished playing.
-    const isSettling = track.frame !== null;
+    const isSettling = !!track.tween && track.tween.isActive();
     const isConsumed = isSettling ||
         (delta > 0 && track.target < 1) ||
         (delta < 0 && track.target > 0);

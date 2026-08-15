@@ -15,6 +15,10 @@ const path = require("path");
 const vm = require("vm");
 
 const root = path.resolve(__dirname, "..");
+// Images live under public/ so Vite serves them verbatim in dev and copies
+// them into dist/ on build. The data file still spells them "../assets/…",
+// which is what the browser sees; on disk that is public/assets/….
+const publicDir = path.join(root, "public");
 const projectDataPath = path.join(root, "scripts", "mineport-project-data.js");
 const indexPath = path.join(root, "index.html");
 
@@ -132,12 +136,12 @@ function checkImage(imageUrl, label) {
     checkedImages.add(repoPath);
     imageCount += 1;
 
-    if (!fs.existsSync(path.join(root, repoPath))) {
+    if (!fs.existsSync(path.join(publicDir, repoPath))) {
         fail(label + ": image not on disk — " + repoPath);
         return;
     }
 
-    if (!fs.existsSync(path.join(root, toPreviewPath(repoPath)))) {
+    if (!fs.existsSync(path.join(publicDir, toPreviewPath(repoPath)))) {
         fail(label + ": no preview for " + repoPath + " — run `node scripts/generate-previews.js`.");
     }
 }

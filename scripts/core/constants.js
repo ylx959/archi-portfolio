@@ -24,10 +24,13 @@ export const coarsePointerQuery = window.matchMedia("(hover: none), (pointer: co
 
 export const nonDesktopScrollQuery = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 1024px)");
 
+// Lenis closes `1 - e^-lerp` of the remaining distance every 60Hz frame, so lerp
+// is really "how short is the glide": 0.018 (what the hand-rolled inertia used)
+// takes ~2.1s to coast to a stop, 0.075 takes ~0.5s. Raise it to shorten the
+// glide further, lower it to lengthen it.
 export const inertiaScrollSettings = {
-    lerp: 0.018,
-    wheelMultiplier: 1.12,
-    settleDistance: 0.2
+    lerp: 0.075,
+    wheelMultiplier: 1.12
 };
 
 export const heroScrambleCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

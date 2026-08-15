@@ -1,3 +1,5 @@
+import { ScrollTrigger } from "./animation.js";
+
 const sections = ["home", "projects", "drawings", "about", "contact"]
     .map(function (id) {
         return document.getElementById(id);
@@ -5,8 +7,6 @@ const sections = ["home", "projects", "drawings", "about", "contact"]
     .filter(Boolean);
 
 const stackedSections = document.querySelectorAll(".drawings-section, .about-section, .contact-section");
-
-let isSectionStackTicking = false;
 
 export function getCurrentSection() {
     const currentScroll = window.scrollY + 120;
@@ -77,20 +77,20 @@ function updateSectionStackMotion() {
     }
 }
 
-function requestSectionStackMotion() {
-    if (isSectionStackTicking) {
-        return;
-    }
-
-    isSectionStackTicking = true;
-    window.requestAnimationFrame(function () {
-        updateSectionStackMotion();
-        isSectionStackTicking = false;
-    });
-}
-
 export function initSections() {
-    window.addEventListener("scroll", requestSectionStackMotion, { passive: true });
-    window.addEventListener("resize", updateSectionStackMotion);
+    // A page-wide trigger rather than one per section, and a live measurement
+    // rather than a scrubbed tween: these sections are `position: sticky` with
+    // negative margins, so where they *start* is not a fixed document offset
+    // ScrollTrigger could measure once at refresh — the rect is the only honest
+    // source. What ScrollTrigger provides is the tick: this now runs on the same
+    // frame Lenis writes its scroll position, instead of on a scroll event
+    // chasing it through a rAF of its own.
+    ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        onUpdate: updateSectionStackMotion,
+        onRefresh: updateSectionStackMotion
+    });
+
     updateSectionStackMotion();
 }

@@ -14,7 +14,7 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const root = path.resolve(__dirname, "..");
-const projectsRoot = path.join(root, "assets", "images", "projects");
+const projectsRoot = path.join(root, "public", "assets", "images", "projects");
 const workDir = path.join(root, ".image-compress-tmp");
 
 const maxDimensionFor = { detail: 1800, gallery: 2400, card: 1600 };

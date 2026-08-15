@@ -2,7 +2,7 @@
     position: relative;
     z-index: 4;
     padding: 22px var(--project-shell-padding) 40px;
-    background: #ffffff;
+    background: var(--paper);
 }
 
 .showcase-shell {
@@ -40,14 +40,14 @@
 
 .category-link:hover,
 .category-link:focus-visible {
-    color: #11100f;
+    color: var(--ink-strong);
     opacity: 1;
     transform: none;
     outline: none;
 }
 
 .category-link.is-active {
-    color: #11100f;
+    color: var(--ink-strong);
     font-weight: 300;
 }
 
@@ -186,14 +186,14 @@
 .time-filter-option:hover,
 .time-filter-option:focus-visible {
     background: rgba(221, 221, 218, 0.92);
-    color: #171514;
+    color: var(--ink);
     outline: none;
 }
 
 .time-filter-option.is-active {
-    background: #171514;
-    color: #ffffff;
-    box-shadow: 0 10px 20px rgba(23, 21, 20, 0.08);
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: 0 10px 20px rgb(var(--ink-rgb) / 0.08);
 }
 
 .filter-chip {
@@ -251,7 +251,7 @@
 
 .filter-icon.is-active {
     background: #ddddda;
-    box-shadow: 0 10px 22px rgba(23, 21, 20, 0.08);
+    box-shadow: 0 10px 22px rgb(var(--ink-rgb) / 0.08);
 }
 
 .filter-icon-window {
@@ -292,15 +292,15 @@
     left: 0;
     width: 3px;
     height: 3px;
-    background: #171514;
+    background: var(--ink);
     border-radius: 50%;
     box-shadow:
-        0 5px 0 #171514,
-        0 10px 0 #171514,
-        5px 0 0 #171514,
-        5px 5px 0 #171514,
-        5px 10px 0 #171514,
-        10px 5px 0 #171514;
+        0 5px 0 var(--ink),
+        0 10px 0 var(--ink),
+        5px 0 0 var(--ink),
+        5px 5px 0 var(--ink),
+        5px 10px 0 var(--ink),
+        10px 5px 0 var(--ink);
 }
 
 .filter-list-icon::before {
@@ -311,10 +311,10 @@
     width: 12px;
     height: 2px;
     border-radius: 999px;
-    background: #171514;
+    background: var(--ink);
     box-shadow:
-        0 5px 0 #171514,
-        0 10px 0 #171514;
+        0 5px 0 var(--ink),
+        0 10px 0 var(--ink);
 }
 
 .filter-list-icon::after {
@@ -325,10 +325,10 @@
     width: 2px;
     height: 2px;
     border-radius: 50%;
-    background: #171514;
+    background: var(--ink);
     box-shadow:
-        0 5px 0 #171514,
-        0 10px 0 #171514;
+        0 5px 0 var(--ink),
+        0 10px 0 var(--ink);
 }
 
 .filter-chip:hover,
@@ -383,7 +383,7 @@
     overflow: hidden;
     border-radius: 12px;
     background: #ddd;
-    box-shadow: 0 10px 28px rgba(32, 26, 20, 0.06);
+    box-shadow: 0 10px 28px rgb(var(--ink-rgb) / 0.06);
     transform-origin: center center;
     will-change: transform, opacity;
     transition: transform 1.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.75s ease, opacity 0.75s ease;
@@ -435,10 +435,10 @@
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.24) 28%, transparent 55%),
-        radial-gradient(circle at 78% 34%, rgba(255, 255, 255, 0.54) 0, rgba(255, 255, 255, 0.18) 22%, transparent 46%),
-        radial-gradient(circle at 52% 76%, rgba(255, 255, 255, 0.42) 0, rgba(255, 255, 255, 0.14) 20%, transparent 42%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.28));
+        radial-gradient(circle at 18% 22%, rgb(var(--paper-rgb) / 0.72) 0, rgb(var(--paper-rgb) / 0.24) 28%, transparent 55%),
+        radial-gradient(circle at 78% 34%, rgb(var(--paper-rgb) / 0.54) 0, rgb(var(--paper-rgb) / 0.18) 22%, transparent 46%),
+        radial-gradient(circle at 52% 76%, rgb(var(--paper-rgb) / 0.42) 0, rgb(var(--paper-rgb) / 0.14) 20%, transparent 42%),
+        linear-gradient(180deg, rgb(var(--paper-rgb) / 0.52), rgb(var(--paper-rgb) / 0.28));
     mix-blend-mode: screen;
     opacity: 0.84;
     transition: opacity 0.95s ease, transform 0.95s ease;
@@ -450,11 +450,11 @@
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.38) 0 0.7px, transparent 1.5px),
-        radial-gradient(circle at 44% 28%, rgba(255, 255, 255, 0.24) 0 0.7px, transparent 1.4px),
-        radial-gradient(circle at 78% 64%, rgba(255, 255, 255, 0.28) 0 0.7px, transparent 1.5px),
-        radial-gradient(circle at 26% 82%, rgba(255, 255, 255, 0.24) 0 0.7px, transparent 1.4px),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(238, 232, 220, 0.05));
+        radial-gradient(circle at 12% 18%, rgb(var(--paper-rgb) / 0.38) 0 0.7px, transparent 1.5px),
+        radial-gradient(circle at 44% 28%, rgb(var(--paper-rgb) / 0.24) 0 0.7px, transparent 1.4px),
+        radial-gradient(circle at 78% 64%, rgb(var(--paper-rgb) / 0.28) 0 0.7px, transparent 1.5px),
+        radial-gradient(circle at 26% 82%, rgb(var(--paper-rgb) / 0.24) 0 0.7px, transparent 1.4px),
+        linear-gradient(180deg, rgb(var(--paper-rgb) / 0.08), rgba(238, 232, 220, 0.05));
     background-size: 26px 26px, 34px 34px, 32px 32px, 40px 40px, 100% 100%;
     mix-blend-mode: screen;
     opacity: 0.32;
@@ -498,7 +498,7 @@
     gap: 3px;
     padding: 10px 12px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.45);
+    background: rgb(var(--paper-rgb) / 0.45);
     backdrop-filter: blur(10px);
     opacity: 0;
     transform: translateY(10px);
@@ -590,7 +590,6 @@
 .project-list-title,
 .project-list-category,
 .project-list-typology,
-.project-list-location,
 .project-list-year {
     margin: 0;
 }
@@ -604,9 +603,8 @@
 
 .project-grid.is-list-view .project-list-category,
 .project-grid.is-list-view .project-list-typology,
-.project-grid.is-list-view .project-list-location,
 .project-grid.is-list-view .project-list-year {
-    color: #8f8d89;
+    color: var(--ink-muted);
     font-size: 0.88rem;
     font-weight: 600;
     letter-spacing: 0.14em;
@@ -619,34 +617,6 @@
 
 .project-grid.is-list-view .project-card:active .project-image {
     transform: scale(1);
-}
-
-@keyframes filter-icon-scroll-grid {
-    0% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-20px);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
-}
-
-@keyframes filter-icon-scroll-list {
-    0% {
-        transform: translateY(-20px);
-    }
-
-    50% {
-        transform: translateY(0);
-    }
-
-    100% {
-        transform: translateY(-20px);
-    }
 }
 
 @keyframes filter-plus-scroll {
@@ -779,7 +749,6 @@
 
     .project-grid.is-list-view .project-list-category,
     .project-grid.is-list-view .project-list-typology,
-    .project-grid.is-list-view .project-list-location,
     .project-grid.is-list-view .project-list-year {
         font-size: 0.78rem;
     }

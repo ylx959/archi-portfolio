@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>YLX studio</title>
     <style>
         .hero {
@@ -22,20 +19,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@100..900&family=Roboto+Flex:wdth,wght@25..151,100..1000&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles/base.css?v=9bb3ef28">
-    <link rel="stylesheet" href="styles/components/hero.css?v=1368b361">
-    <link rel="stylesheet" href="styles/components/floating-nav.css?v=14ebaf19">
-    <link rel="stylesheet" href="styles/components/project-grid.css?v=a092c45f">
-    <link rel="stylesheet" href="styles/components/project-detail.css?v=2b519a52">
-    <link rel="stylesheet" href="styles/components/drawings.css?v=6ac8dead">
-    <link rel="stylesheet" href="styles/components/about.css?v=ee7126dd">
-    <link rel="stylesheet" href="styles/components/contact.css?v=426cbd9d">
-    <link rel="stylesheet" href="styles/components/cursor-follower.css?v=b4a623c7">
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/components/hero.css">
+    <link rel="stylesheet" href="styles/components/floating-nav.css">
+    <link rel="stylesheet" href="styles/components/project-grid.css">
+    <link rel="stylesheet" href="styles/components/project-detail.css">
+    <link rel="stylesheet" href="styles/components/drawings.css">
+    <link rel="stylesheet" href="styles/components/about.css">
+    <link rel="stylesheet" href="styles/components/contact.css">
+    <link rel="stylesheet" href="styles/components/cursor-follower.css">
 </head>
 <body>
     <header class="hero is-intro-pending" id="home">
         <div class="hero-visual" id="heroVisual" aria-hidden="true">
-            <img class="hero-main-image hero-main-image-visual" src="assets/images/main/main.jpg?v=2" alt="" loading="eager" decoding="async" fetchpriority="high">
+            <img class="hero-main-image hero-main-image-visual" src="/assets/images/main/main.jpg?v=2" alt="" loading="eager" decoding="async" fetchpriority="high">
         </div>
         <p class="hero-expand-title" id="heroExpandTitle" aria-hidden="true">
             <span class="hero-expand-word hero-expand-word-left">Architecture</span>
@@ -76,7 +73,7 @@
             <a class="nav-link section-floating-link" data-section-link="contact" href="#contact"><span class="section-floating-link-text">CONTACT</span></a>
         </div>
         <a class="section-floating-logo" href="#home" aria-label="Back to home">
-            <img class="section-floating-logo-image" src="assets/icons/contact-logo.svg" alt="">
+            <img class="section-floating-logo-image" src="/assets/icons/contact-logo.svg" alt="">
         </a>
     </nav>
 
@@ -146,128 +143,8 @@
 
             <div class="drawings-carousel">
                 <div class="drawings-viewport">
+                    <!-- Cards are rendered by scripts/components/drawings.js. -->
                     <div class="drawings-track" id="drawingsTrack">
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">001</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings.png" alt="Drawing study 001">
-                                <div class="drawings-caption">
-                                    <h3>Blue Bottle series</h3>
-                                    <p>Palo Alto</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">002</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings1.png" alt="Drawing study 002">
-                                <div class="drawings-caption">
-                                    <h3>Blue Bottle series</h3>
-                                    <p>Nakameguro</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">003</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings2.JPG" alt="Drawing study 003">
-                                <div class="drawings-caption">
-                                    <h3>FUJI MT</h3>
-                                    <p>Lawson</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">004</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings3.JPG" alt="Drawing study 004">
-                                <div class="drawings-caption">
-                                    <h3>F1 series</h3>
-                                    <p>Mercedes-AMG F1 W15</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">005</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings4.JPG" alt="Drawing study 005">
-                                <div class="drawings-caption">
-                                    <h3>F1 series</h3>
-                                    <p>Ferrari SF-23</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">006</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings5.JPG" alt="Drawing study 006">
-                                <div class="drawings-caption">
-                                    <h3>Blue Bottle series</h3>
-                                    <p>Kobe Hankyu</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">007</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings6.JPG" alt="Drawing study 007">
-                                <div class="drawings-caption">
-                                    <h3>F1 series</h3>
-                                    <p>McLaren MP4/4</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">008</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings7.jpg" alt="Drawing study 008">
-                                <div class="drawings-caption">
-                                    <h3>Street View series</h3>
-                                    <p>Bangkok Copenn</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">009</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings8.png" alt="Drawing study 009">
-                                <div class="drawings-caption">
-                                    <h3>Cartoon series</h3>
-                                    <p>Felicity's birthday duck</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">010</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings9.jpg" alt="Drawing study 010">
-                                <div class="drawings-caption">
-                                    <h3>Architecture series</h3>
-                                    <p>Sydney opera house</p>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="drawings-card">
-                            <div class="drawings-media-wrap">
-                                <span class="drawings-index">011</span>
-                                <img class="drawings-image" src="assets/images/drawings/drawings10.jpg" alt="Drawing study 011">
-                                <div class="drawings-caption">
-                                    <h3>Imagination</h3>
-                                    <p>Floating Library</p>
-                                </div>
-                            </div>
-                        </article>
-
                     </div>
                 </div>
             </div>
@@ -316,7 +193,7 @@
                     <div class="about-frame about-frame-link" id="aboutInstagramCard" role="button" tabindex="0" aria-label="Open Instagram prompt">
                         <div class="about-card-inner">
                             <div class="about-card-face about-card-front">
-                                <img class="about-image" src="assets/images/about/about1.jpg" alt="YLX Studio visual reference">
+                                <img class="about-image" src="/assets/images/about/about1.jpg" alt="YLX Studio visual reference">
                             </div>
                             <div class="about-card-face about-card-back">
                                 <span class="about-card-back-label about-card-back-label-top">ABOUT</span>
@@ -337,7 +214,7 @@
         <div class="contact-shell">
             <div class="contact-layout">
                 <div class="contact-brand">
-                    <img class="contact-mark" src="assets/icons/contact-logo.svg" alt="YLX logo">
+                    <img class="contact-mark" src="/assets/icons/contact-logo.svg" alt="YLX logo">
                 </div>
 
                 <div class="contact-main">
@@ -438,7 +315,9 @@
         </div>
     </div>
 
-    <script src="scripts/mineport-project-data.js?v=5067c7fc"></script>
-    <script type="module" src="scripts/main.js?v=289b5c42"></script>
+    <!-- The project data file is no longer a second <script>: it is imported for
+         its side effect by scripts/core/project-data.js, which guarantees it has
+         run before any module body reads window.MINEPORT_PROJECT_DETAIL_DATA. -->
+    <script type="module" src="/scripts/main.js"></script>
 </body>
 </html>

@@ -50,7 +50,7 @@
     font-family: "Roboto Flex", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     max-width: none;
     margin-bottom: 0;
-    color: #11100f;
+    color: var(--ink-strong);
     font-size: clamp(2.9rem, 5.8vw, 5.45rem);
     line-height: 0.92;
     font-weight: 400;
@@ -102,8 +102,6 @@
     letter-spacing: -0.035em;
     text-transform: lowercase;
 }
-
-
 
 .drawings-carousel {
     grid-column: 1;
@@ -161,8 +159,8 @@
     padding: 15px;
     border-radius: 24px;
     margin-bottom: 0;
-    background: #ffffff;
-    border: 1px solid rgba(20, 17, 15, 0.05);
+    background: var(--paper);
+    border: 1px solid rgb(var(--ink-rgb) / 0.05);
     /* The cast layers are scaled by --drawings-card-shadow, which drawings.js
        drops toward zero as the card behind gets covered. They spread 22px and
        44px, far wider than the 9-14px the stack steps by, so at full strength
@@ -171,11 +169,11 @@
        hairline are not scaled — those are the card's own edge, not depth it
        casts onto anything. */
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 0 0 1px rgba(255, 255, 255, 0.28),
-        0 2px 5px rgba(18, 15, 12, calc(0.018 * var(--drawings-card-shadow, 1))),
-        0 10px 22px rgba(18, 15, 12, calc(0.032 * var(--drawings-card-shadow, 1))),
-        0 24px 44px rgba(18, 15, 12, calc(0.028 * var(--drawings-card-shadow, 1)));
+        0 1px 0 rgb(var(--paper-rgb) / 0.9) inset,
+        0 0 0 1px rgb(var(--paper-rgb) / 0.28),
+        0 2px 5px rgb(var(--ink-rgb) / calc(0.018 * var(--drawings-card-shadow, 1))),
+        0 10px 22px rgb(var(--ink-rgb) / calc(0.032 * var(--drawings-card-shadow, 1))),
+        0 24px 44px rgb(var(--ink-rgb) / calc(0.028 * var(--drawings-card-shadow, 1)));
 }
 
 .drawings-index {
@@ -195,7 +193,7 @@
     aspect-ratio: 1 / 1;
     object-fit: contain;
     object-position: center;
-    background: #ffffff;
+    background: var(--paper);
     transform: scale(1.03);
     transform-origin: center center;
     transition: transform 0.7s ease, filter 0.7s ease;
@@ -217,7 +215,7 @@
 
 .drawings-caption h3 {
     margin-bottom: 3px;
-    color: #11100f;
+    color: var(--ink-strong);
     font-size: 0.95rem;
     font-weight: 400;
 }
@@ -239,86 +237,6 @@
 .drawings-card:focus-within .drawings-caption {
     opacity: 1;
     transform: translateY(-2px);
-}
-
-.drawings-arrow {
-    display: none;
-}
-
-.drawings-arrow-glyph {
-    display: inline-block;
-    font-family: "Helvetica Neue", "SF Pro Display", Arial, sans-serif;
-    font-size: 1.15rem;
-    font-weight: 300;
-    line-height: 1;
-    transform: scaleX(0.82);
-}
-
-.drawings-arrow:hover,
-.drawings-arrow:focus-visible {
-    outline: none;
-}
-
-.drawings-arrow-left:hover .drawings-arrow-glyph,
-.drawings-arrow-left:focus-visible .drawings-arrow-glyph {
-    animation: none;
-}
-
-.drawings-arrow-right:hover .drawings-arrow-glyph,
-.drawings-arrow-right:focus-visible .drawings-arrow-glyph {
-    animation: none;
-}
-
-.drawings-arrow-left {
-    left: -58px;
-}
-
-.drawings-arrow-right {
-    right: -58px;
-}
-
-@keyframes drawings-arrow-scroll-left {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    35% {
-        transform: translateX(-16px);
-        opacity: 0;
-    }
-
-    36% {
-        transform: translateX(16px);
-        opacity: 0;
-    }
-
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes drawings-arrow-scroll-right {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    35% {
-        transform: translateX(16px);
-        opacity: 0;
-    }
-
-    36% {
-        transform: translateX(-16px);
-        opacity: 0;
-    }
-
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
 }
 
 @media (max-width: 1080px) {

@@ -6,6 +6,10 @@ const vm = require("vm");
 const { execFileSync } = require("child_process");
 
 const root = path.resolve(__dirname, "..");
+// Images live under public/ so Vite serves them verbatim in dev and copies
+// them into dist/ on build. The data file still spells them "../assets/…",
+// which is what the browser sees; on disk that is public/assets/….
+const publicDir = path.join(root, "public");
 const projectDataPath = path.join(root, "scripts", "mineport-project-data.js");
 const source = fs.readFileSync(projectDataPath, "utf8");
 const context = { window: {} };
@@ -33,11 +37,11 @@ function toRepoRelative(imageUrl) {
 }
 
 function getSourcePath(imagePath) {
-    return path.join(root, imagePath);
+    return path.join(publicDir, imagePath);
 }
 
 function getPreviewPath(imagePath) {
-    return path.join(root, imagePath
+    return path.join(publicDir, imagePath
         .replace(/^assets\/images\//, "assets/images/previews/")
         .replace(/\.[^/.]+$/, ".jpg"));
 }

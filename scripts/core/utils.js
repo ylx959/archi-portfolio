@@ -1,4 +1,4 @@
-import { heroScrambleCharacters } from "./constants.js?v=68161bbf";
+import { heroScrambleCharacters } from "./constants.js";
 
 export function escapeAttribute(value) {
     return String(value || "")
@@ -6,20 +6,6 @@ export function escapeAttribute(value) {
         .replace(/"/g, "&quot;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
-}
-
-export function easeInOutCubic(progress) {
-    return progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-}
-
-export function easeOutBack(progress, overshoot) {
-    const clamped = Math.max(0, Math.min(progress, 1));
-    const c1 = overshoot;
-    const c3 = c1 + 1;
-
-    return 1 + (c3 * Math.pow(clamped - 1, 3)) + (c1 * Math.pow(clamped - 1, 2));
 }
 
 export function isMobileHeroMode() {

@@ -9,6 +9,19 @@ Do not claim the original content, images, or identity as your own.
 
 
 
+## Running it
+
+Built with [Vite](https://vite.dev), scrolling by [Lenis](https://lenis.darkroom.engineering), animation by [GSAP](https://gsap.com) with ScrollTrigger.
+
+```bash
+npm install
+npm run dev        # http://localhost:8000
+npm run build      # -> dist/
+npm run preview    # serve the built site
+```
+
+Pushing to `main` builds and publishes to GitHub Pages via `.github/workflows/deploy.yml`; `dist/` is not committed.
+
 ## Image previews
 
 Project detail images use blurred low-resolution previews before the full images load.
@@ -19,14 +32,4 @@ After adding or changing project images in `scripts/mineport-project-data.js`, r
 node scripts/generate-previews.js
 ```
 
-The script only creates missing files in `assets/images/previews`, so it is safe to run again.
-
-## Asset versions
-
-After changing local CSS or JavaScript, bump the cache-busting versions in `index.html`:
-
-```bash
-node scripts/bump-assets.js
-```
-
-The script increments only local `styles/*.css` and `scripts/*.js` references.
+The script only creates missing files in `public/assets/images/previews`, so it is safe to run again.

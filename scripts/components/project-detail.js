@@ -1,8 +1,8 @@
-import { projectImageBatchSize } from "../core/constants.js?v=68161bbf";
-import { body } from "../core/dom.js?v=7d47bc36";
-import { projectDetails } from "../core/project-data.js?v=a0074993";
-import { cancelInertiaScroll, syncInertiaScrollPosition } from "../core/scroll.js?v=13019963";
-import { escapeAttribute, getPreviewImageSrc, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js?v=660387f7";
+import { projectImageBatchSize } from "../core/constants.js";
+import { body } from "../core/dom.js";
+import { projectDetails } from "../core/project-data.js";
+import { pauseScroll, resumeScroll } from "../core/scroll.js";
+import { escapeAttribute, getPreviewImageSrc, isMobileHeroMode, setButtonText, triggerOneShotButtonScroll } from "../core/utils.js";
 
 const projectDetailOverlay = document.getElementById("projectDetailOverlay");
 
@@ -422,7 +422,7 @@ export function openProjectDetail(index, sourceCard) {
         return;
     }
 
-    cancelInertiaScroll();
+    pauseScroll();
 
     lastFocusedProjectCard = sourceCard || null;
     currentProjectDetailIndex = index;
@@ -485,7 +485,7 @@ function closeProjectDetail() {
     }
 
     const lockedPageY = window.scrollY;
-    cancelInertiaScroll();
+    pauseScroll();
     projectDetailOverlay.classList.remove("is-active");
     projectDetailOverlay.classList.add("is-closing");
     projectDetailOverlay.setAttribute("aria-hidden", "true");
@@ -509,7 +509,7 @@ function closeProjectDetail() {
             window.scrollTo(0, lockedPageY);
         }
 
-        syncInertiaScrollPosition();
+        resumeScroll();
     }, 240);
 }
 

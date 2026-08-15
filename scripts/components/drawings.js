@@ -1,19 +1,64 @@
-import { openDrawingsDetail } from "./drawings-detail.js?v=0f9c1c8f";
+import { ScrollTrigger } from "../core/animation.js";
+import { openDrawingsDetail } from "./drawings-detail.js";
 
 export const drawingsTrack = document.getElementById("drawingsTrack");
 
-let isDrawingsStackTicking = false;
+// The eleven cards used to be hand-written <article> blocks in index.html: 121
+// lines of markup whose entries differed in three fields. Same move the project
+// grid made — the content is data, the markup is built from it. The index and
+// the alt text are positional, so they are derived rather than stored.
+const drawings = [
+    { image: "drawings.png", title: "Blue Bottle series", place: "Palo Alto" },
+    { image: "drawings1.png", title: "Blue Bottle series", place: "Nakameguro" },
+    { image: "drawings2.JPG", title: "FUJI MT", place: "Lawson" },
+    { image: "drawings3.JPG", title: "F1 series", place: "Mercedes-AMG F1 W15" },
+    { image: "drawings4.JPG", title: "F1 series", place: "Ferrari SF-23" },
+    { image: "drawings5.JPG", title: "Blue Bottle series", place: "Kobe Hankyu" },
+    { image: "drawings6.JPG", title: "F1 series", place: "McLaren MP4/4" },
+    { image: "drawings7.jpg", title: "Street View series", place: "Bangkok Copenn" },
+    { image: "drawings8.png", title: "Cartoon series", place: "Felicity's birthday duck" },
+    { image: "drawings9.jpg", title: "Architecture series", place: "Sydney opera house" },
+    { image: "drawings10.jpg", title: "Imagination", place: "Floating Library" }
+];
 
-function getDrawingsVisibleCount() {
-    if (window.innerWidth <= 768) {
-        return 1;
+function buildDrawingsCards() {
+    if (!drawingsTrack || drawingsTrack.children.length) {
+        return;
     }
 
-    if (window.innerWidth <= 1080) {
-        return 2;
-    }
+    const imageBase = import.meta.env.BASE_URL + "assets/images/drawings/";
 
-    return 3;
+    drawings.forEach(function (drawing, index) {
+        const label = String(index + 1).padStart(3, "0");
+        const card = document.createElement("article");
+        card.className = "drawings-card";
+
+        const wrap = document.createElement("div");
+        wrap.className = "drawings-media-wrap";
+
+        const number = document.createElement("span");
+        number.className = "drawings-index";
+        number.textContent = label;
+
+        const image = document.createElement("img");
+        image.className = "drawings-image";
+        image.src = imageBase + drawing.image;
+        image.alt = "Drawing study " + label;
+
+        const caption = document.createElement("div");
+        caption.className = "drawings-caption";
+
+        const title = document.createElement("h3");
+        title.textContent = drawing.title;
+
+        const place = document.createElement("p");
+        place.textContent = drawing.place;
+
+        caption.append(title, place);
+        wrap.append(number, image, caption);
+        card.append(wrap);
+        drawingsTrack.append(card);
+    });
 }
 
 function buildDrawingsLoop() {
@@ -85,21 +130,9 @@ function updateDrawingsStackMotion() {
     });
 }
 
-function requestDrawingsStackMotion() {
-    if (isDrawingsStackTicking) {
-        return;
-    }
-
-    isDrawingsStackTicking = true;
-    window.requestAnimationFrame(function () {
-        updateDrawingsStackMotion();
-        isDrawingsStackTicking = false;
-    });
-}
-
 export function initDrawings() {
+    buildDrawingsCards();
     buildDrawingsLoop();
-    requestDrawingsStackMotion();
     if (drawingsTrack) {
         drawingsTrack.addEventListener("click", function (event) {
             const card = event.target.closest(".drawings-card");
@@ -125,10 +158,24 @@ export function initDrawings() {
                 openDrawingsDetail(image.getAttribute("src"), image.getAttribute("alt"), card);
             }
         });
+
+        // Scoped to the track's own passage through the viewport: the cards are
+        // sticky, so the pass has to keep measuring live rects, but there is no
+        // reason to pay for it while the drawings are nowhere near the screen —
+        // which is what the old page-wide scroll listener did.
+        ScrollTrigger.create({
+            trigger: drawingsTrack,
+            start: "top bottom",
+            end: "bottom top",
+            onUpdate: updateDrawingsStackMotion,
+            onRefresh: updateDrawingsStackMotion
+        });
+
+        // The index and the resting scale are written from the stylesheet's
+        // breakpoint values, so they have to be rewritten before ScrollTrigger
+        // remeasures rather than after it.
+        ScrollTrigger.addEventListener("refreshInit", buildDrawingsLoop);
     }
-    window.addEventListener("scroll", requestDrawingsStackMotion, { passive: true });
-    window.addEventListener("resize", function () {
-        buildDrawingsLoop();
-        requestDrawingsStackMotion();
-    });
+
+    updateDrawingsStackMotion();
 }

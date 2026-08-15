@@ -1,6 +1,7 @@
-import { openProjectDetail } from "./project-detail.js?v=55d63d4b";
-import { projectDetails } from "../core/project-data.js?v=a0074993";
-import { getPreviewImageSrc } from "../core/utils.js?v=660387f7";
+import { gsap } from "../core/animation.js";
+import { openProjectDetail } from "./project-detail.js";
+import { projectDetails } from "../core/project-data.js";
+import { getPreviewImageSrc } from "../core/utils.js";
 
 const viewToggle = document.getElementById("viewToggle");
 
@@ -34,13 +35,8 @@ let activeYearFilter = "all";
 
 let activeTypologyFilter = "all";
 
-let timeFilterAutoCloseTimer = null;
-
-let typologyFilterAutoCloseTimer = null;
-
-let timeFilterCloseTimer = null;
-
-let typologyFilterCloseTimer = null;
+// One controller per filter panel, filled in by initProjectGrid().
+const filterPanels = [];
 
 let projectEmptyState = null;
 
@@ -157,136 +153,100 @@ function applyProjectFilters() {
     }
 }
 
-function clearTimeFilterAutoCloseTimer() {
-    if (timeFilterAutoCloseTimer) {
-        window.clearTimeout(timeFilterAutoCloseTimer);
-        timeFilterAutoCloseTimer = null;
-    }
-}
-
-function clearTimeFilterCloseTimer() {
-    if (timeFilterCloseTimer) {
-        window.clearTimeout(timeFilterCloseTimer);
-        timeFilterCloseTimer = null;
-    }
-}
-
-function scheduleTimeFilterAutoClose() {
-    if (!timeFilterPanel || !timeFilterToggle || !timeFilterPanel.classList.contains("is-open")) {
-        return;
+// The time and typology panels behave identically, so there is one
+// implementation and two instances of it. This used to be two copies of the same
+// sixty lines that differed only in an identifier prefix — including two copies
+// of the closing animation's timing, which is exactly the kind of thing that
+// drifts apart unnoticed.
+function createFilterPanel(toggle, panel) {
+    if (!toggle || !panel) {
+        return null;
     }
 
-    clearTimeFilterAutoCloseTimer();
-    timeFilterAutoCloseTimer = window.setTimeout(function () {
-        if (!timeFilterPanel.matches(":hover") && !timeFilterToggle.matches(":hover")) {
-            setTimeFilterPanelOpen(false);
-        }
-    }, 1500);
-}
+    const controller = { toggle: toggle, panel: panel, autoClose: null, close: null };
 
-function setTimeFilterPanelOpen(isOpen, options) {
-    if (!timeFilterPanel || !timeFilterToggle) {
-        return;
-    }
-
-    const closeInstantly = !!(options && options.closeInstantly);
-    clearTimeFilterAutoCloseTimer();
-    clearTimeFilterCloseTimer();
-
-    if (isOpen && typologyFilterPanel && typologyFilterPanel.classList.contains("is-open")) {
-        setTypologyFilterPanelOpen(false, { closeInstantly: true });
-    }
-
-    if (isOpen) {
-        timeFilterPanel.classList.remove("is-closing");
-        timeFilterPanel.classList.add("is-open");
-        timeFilterPanel.setAttribute("aria-hidden", "false");
-    } else if (timeFilterPanel.classList.contains("is-open") || timeFilterPanel.classList.contains("is-closing")) {
-        if (closeInstantly) {
-            timeFilterPanel.classList.remove("is-open", "is-closing");
-            timeFilterPanel.setAttribute("aria-hidden", "true");
-        } else {
-        timeFilterPanel.classList.remove("is-open");
-        timeFilterPanel.classList.add("is-closing");
-        timeFilterPanel.setAttribute("aria-hidden", "true");
-        timeFilterCloseTimer = window.setTimeout(function () {
-            timeFilterPanel.classList.remove("is-closing");
-            timeFilterCloseTimer = null;
-        }, 560);
+    function cancel(key) {
+        if (controller[key]) {
+            controller[key].kill();
+            controller[key] = null;
         }
     }
 
-    timeFilterToggle.setAttribute("aria-expanded", String(isOpen));
+    // Leaving the panel closes it, but not at once: the pointer often slips off
+    // and back on its way down to an option.
+    function scheduleAutoClose() {
+        cancel("autoClose");
 
-    if (isOpen) {
-        scheduleTimeFilterAutoClose();
-    }
-}
-
-function clearTypologyFilterAutoCloseTimer() {
-    if (typologyFilterAutoCloseTimer) {
-        window.clearTimeout(typologyFilterAutoCloseTimer);
-        typologyFilterAutoCloseTimer = null;
-    }
-}
-
-function clearTypologyFilterCloseTimer() {
-    if (typologyFilterCloseTimer) {
-        window.clearTimeout(typologyFilterCloseTimer);
-        typologyFilterCloseTimer = null;
-    }
-}
-
-function scheduleTypologyFilterAutoClose() {
-    if (!typologyFilterPanel || !typologyFilterToggle || !typologyFilterPanel.classList.contains("is-open")) {
-        return;
-    }
-
-    clearTypologyFilterAutoCloseTimer();
-    typologyFilterAutoCloseTimer = window.setTimeout(function () {
-        if (!typologyFilterPanel.matches(":hover") && !typologyFilterToggle.matches(":hover")) {
-            setTypologyFilterPanelOpen(false);
+        if (!panel.classList.contains("is-open")) {
+            return;
         }
-    }, 1500);
-}
 
-function setTypologyFilterPanelOpen(isOpen, options) {
-    if (!typologyFilterPanel || !typologyFilterToggle) {
-        return;
+        controller.autoClose = gsap.delayedCall(1.5, function () {
+            controller.autoClose = null;
+
+            if (!panel.matches(":hover") && !toggle.matches(":hover")) {
+                controller.setOpen(false);
+            }
+        });
     }
 
-    const closeInstantly = !!(options && options.closeInstantly);
-    clearTypologyFilterAutoCloseTimer();
-    clearTypologyFilterCloseTimer();
+    controller.scheduleAutoClose = scheduleAutoClose;
 
-    if (isOpen && timeFilterPanel && timeFilterPanel.classList.contains("is-open")) {
-        setTimeFilterPanelOpen(false, { closeInstantly: true });
-    }
+    controller.contains = function (node) {
+        return panel.contains(node) || toggle.contains(node);
+    };
 
-    if (isOpen) {
-        typologyFilterPanel.classList.remove("is-closing");
-        typologyFilterPanel.classList.add("is-open");
-        typologyFilterPanel.setAttribute("aria-hidden", "false");
-    } else if (typologyFilterPanel.classList.contains("is-open") || typologyFilterPanel.classList.contains("is-closing")) {
-        if (closeInstantly) {
-            typologyFilterPanel.classList.remove("is-open", "is-closing");
-            typologyFilterPanel.setAttribute("aria-hidden", "true");
-        } else {
-        typologyFilterPanel.classList.remove("is-open");
-        typologyFilterPanel.classList.add("is-closing");
-        typologyFilterPanel.setAttribute("aria-hidden", "true");
-        typologyFilterCloseTimer = window.setTimeout(function () {
-            typologyFilterPanel.classList.remove("is-closing");
-            typologyFilterCloseTimer = null;
-        }, 560);
+    controller.setOpen = function (isOpen, options) {
+        cancel("autoClose");
+        cancel("close");
+
+        if (isOpen) {
+            // Only one panel is ever open. The one being replaced skips its
+            // closing animation so the two do not cross-fade over each other.
+            filterPanels.forEach(function (other) {
+                if (other !== controller) {
+                    other.setOpen(false, { closeInstantly: true });
+                }
+            });
+
+            panel.classList.remove("is-closing");
+            panel.classList.add("is-open");
+            panel.setAttribute("aria-hidden", "false");
+            scheduleAutoClose();
+        } else if (panel.classList.contains("is-open") || panel.classList.contains("is-closing")) {
+            panel.classList.remove("is-open");
+            panel.setAttribute("aria-hidden", "true");
+
+            if (options && options.closeInstantly) {
+                panel.classList.remove("is-closing");
+            } else {
+                // `is-closing` drives the option stagger on the way out; it has
+                // to outlive `is-open` for as long as that animation runs.
+                panel.classList.add("is-closing");
+                controller.close = gsap.delayedCall(0.56, function () {
+                    controller.close = null;
+                    panel.classList.remove("is-closing");
+                });
+            }
         }
-    }
 
-    typologyFilterToggle.setAttribute("aria-expanded", String(isOpen));
+        toggle.setAttribute("aria-expanded", String(isOpen));
+    };
 
-    if (isOpen) {
-        scheduleTypologyFilterAutoClose();
-    }
+    toggle.addEventListener("click", function () {
+        const willOpen = !panel.classList.contains("is-open");
+        controller.setOpen(willOpen, { closeInstantly: !willOpen });
+    });
+
+    [toggle, panel].forEach(function (element) {
+        element.addEventListener("mouseenter", function () {
+            cancel("autoClose");
+        });
+        element.addEventListener("mouseleave", scheduleAutoClose);
+    });
+
+    filterPanels.push(controller);
+    return controller;
 }
 
 function syncFilterPanelOffsets() {
@@ -329,8 +289,9 @@ function setActiveTypologyFilter(value) {
 function resetSecondaryProjectFilters() {
     setActiveTimeFilter("all");
     setActiveTypologyFilter("all");
-    setTimeFilterPanelOpen(false);
-    setTypologyFilterPanelOpen(false);
+    filterPanels.forEach(function (controller) {
+        controller.setOpen(false);
+    });
 }
 
 function appendProjectListInfo(card, detail) {
@@ -407,35 +368,17 @@ export function initProjectGrid() {
         });
     });
 
-    if (timeFilterToggle && timeFilterPanel) {
-        timeFilterToggle.addEventListener("click", function () {
-            const willOpen = !timeFilterPanel.classList.contains("is-open");
-            setTimeFilterPanelOpen(willOpen, { closeInstantly: !willOpen });
-        });
-
-        timeFilterToggle.addEventListener("mouseenter", clearTimeFilterAutoCloseTimer);
-        timeFilterToggle.addEventListener("mouseleave", scheduleTimeFilterAutoClose);
-        timeFilterPanel.addEventListener("mouseenter", clearTimeFilterAutoCloseTimer);
-        timeFilterPanel.addEventListener("mouseleave", scheduleTimeFilterAutoClose);
-    }
-
-    if (typologyFilterToggle && typologyFilterPanel) {
-        typologyFilterToggle.addEventListener("click", function () {
-            const willOpen = !typologyFilterPanel.classList.contains("is-open");
-            setTypologyFilterPanelOpen(willOpen, { closeInstantly: !willOpen });
-        });
-
-        typologyFilterToggle.addEventListener("mouseenter", clearTypologyFilterAutoCloseTimer);
-        typologyFilterToggle.addEventListener("mouseleave", scheduleTypologyFilterAutoClose);
-        typologyFilterPanel.addEventListener("mouseenter", clearTypologyFilterAutoCloseTimer);
-        typologyFilterPanel.addEventListener("mouseleave", scheduleTypologyFilterAutoClose);
-    }
+    const timeFilter = createFilterPanel(timeFilterToggle, timeFilterPanel);
+    const typologyFilter = createFilterPanel(typologyFilterToggle, typologyFilterPanel);
 
     timeFilterOptions.forEach(function (option) {
         option.addEventListener("click", function () {
             setActiveTimeFilter(option.dataset.yearFilter || "all");
             applyProjectFilters();
-            scheduleTimeFilterAutoClose();
+
+            if (timeFilter) {
+                timeFilter.scheduleAutoClose();
+            }
         });
     });
 
@@ -443,32 +386,20 @@ export function initProjectGrid() {
         option.addEventListener("click", function () {
             setActiveTypologyFilter(option.dataset.typologyFilter || "all");
             applyProjectFilters();
-            scheduleTypologyFilterAutoClose();
+
+            if (typologyFilter) {
+                typologyFilter.scheduleAutoClose();
+            }
         });
     });
 
+    // A click lands outside every panel it is not inside of.
     document.addEventListener("click", function (event) {
-        if (!timeFilterPanel || !timeFilterToggle) {
-            if (typologyFilterPanel && typologyFilterToggle && !typologyFilterPanel.contains(event.target) && !typologyFilterToggle.contains(event.target)) {
-                setTypologyFilterPanelOpen(false);
+        filterPanels.forEach(function (controller) {
+            if (!controller.contains(event.target)) {
+                controller.setOpen(false);
             }
-
-            return;
-        }
-
-        if (timeFilterPanel.contains(event.target) || timeFilterToggle.contains(event.target)) {
-            if (typologyFilterPanel && typologyFilterToggle && !typologyFilterPanel.contains(event.target) && !typologyFilterToggle.contains(event.target)) {
-                setTypologyFilterPanelOpen(false);
-            }
-
-            return;
-        }
-
-        setTimeFilterPanelOpen(false);
-
-        if (typologyFilterPanel && typologyFilterToggle && !typologyFilterPanel.contains(event.target) && !typologyFilterToggle.contains(event.target)) {
-            setTypologyFilterPanelOpen(false);
-        }
+        });
     });
 
     if (viewToggle && projectGrid) {

@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "../core/constants.js?v=68161bbf";
+import { reducedMotionQuery } from "../core/constants.js";
 
 // Things in the hero intro arrive by falling into frame and bouncing to a stop.
 // This is an integrated fall rather than a keyframe with a bouncy easing curve:
@@ -40,9 +40,13 @@ const physics = {
 };
 
 // Each thing that can fall: where its variables go, and how much it deforms.
-// The three headline pieces are separate bodies — one rigid line dropping as a
-// slab looks like a panel, three pieces landing a beat apart looks like objects.
-const words = Array.from(document.querySelectorAll(".hero-expand-word"));
+// The headline pieces are separate bodies — one rigid line dropping as a slab
+// looks like a panel, pieces landing a beat apart look like objects.
+//
+// The "&" is deliberately not among them. It does not fall at all: it hops in
+// from the right edge afterwards, and hero-ampersand.js owns that — including
+// the same --hero-word-drop-* variables this file writes for the other two.
+const words = Array.from(document.querySelectorAll(".hero-expand-word:not(.hero-expand-word-mid)"));
 
 const droppers = {
     card: {

@@ -79,7 +79,7 @@
     border: none;
     border-radius: 10px;
     background: #dfdfdf;
-    color: #171514;
+    color: var(--ink);
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -106,7 +106,7 @@
     border: none;
     outline: none;
     background: transparent;
-    color: #171514;
+    color: var(--ink);
     font-size: 1rem;
 }
 
@@ -122,7 +122,7 @@
     border: none;
     border-radius: 12px;
     background: rgba(38, 38, 40, 0.52);
-    color: rgba(255, 255, 255, 0.94);
+    color: rgb(var(--paper-rgb) / 0.94);
     backdrop-filter: blur(14px) saturate(135%);
     -webkit-backdrop-filter: blur(14px) saturate(135%);
     font-size: 0.74rem;
@@ -130,8 +130,8 @@
     text-transform: uppercase;
     text-decoration: none;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.16),
-        0 4px 12px rgba(18, 17, 16, 0.08);
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.16),
+        0 4px 12px rgb(var(--ink-rgb) / 0.08);
     transition: background 0.28s ease, color 0.28s ease, box-shadow 0.28s ease;
 }
 
@@ -142,23 +142,16 @@
 .contact-submit:hover,
 .contact-submit:focus-visible {
     background: rgba(54, 54, 58, 0.64);
-    color: #ffffff;
+    color: var(--paper);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        0 6px 14px rgba(18, 17, 16, 0.12);
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.2),
+        0 6px 14px rgb(var(--ink-rgb) / 0.12);
     outline: none;
 }
 
 .contact-submit:hover .contact-submit-text,
 .contact-submit:focus-visible .contact-submit-text {
     animation: contact-submit-scroll 0.56s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
-}
-
-.contact-note {
-    max-width: 420px;
-    font-size: 0.78rem;
-    line-height: 1.45;
-    color: #88847d;
 }
 
 .contact-footer {
@@ -180,7 +173,7 @@
 .contact-footer-left {
     align-items: flex-end;
     font-size: 0.82rem;
-    color: #8a867f;
+    color: var(--ink-muted);
 }
 
 .contact-footer-right {
@@ -193,7 +186,7 @@
     border: none;
     background: transparent;
     padding: 0;
-    color: #8a867f;
+    color: var(--ink-muted);
     font-size: 0.88rem;
     line-height: 1;
     text-decoration: none;
@@ -202,7 +195,7 @@
 
 .contact-socials a:hover,
 .contact-socials a:focus-visible {
-    color: #11100f;
+    color: var(--ink-strong);
     outline: none;
 }
 
