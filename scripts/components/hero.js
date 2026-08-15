@@ -145,7 +145,7 @@ function completeHeroStory() {
 
     clearHeroTimer("autoScroll");
     heroState.isAwaitingAutoScroll = true;
-    scheduleHeroTimer("autoScroll", 1300, function () {
+    scheduleHeroTimer("autoScroll", 1000, function () {
         smoothScrollToSection(projectsSection);
     });
 }
@@ -740,7 +740,7 @@ function submitEnterForm() {
     scheduleHeroTimer("morph", 2140, function () {
         setHeroPhase(HERO_PHASES.MORPHED);
 
-        scheduleHeroTimer("unlock", 1100, function () {
+        scheduleHeroTimer("unlock", 1200, function () {
             heroState.isStoryUnlocked = true;
         });
     });
