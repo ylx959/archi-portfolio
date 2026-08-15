@@ -41,6 +41,7 @@ const heroExpandTrack = {
     progress: 0,
     target: 0,
     tween: null,
+    isSettling: false,
     // long on purpose: the card keeps easing after the wheel stops, which is the
     // whole point of scrubbing it rather than tracking the wheel one to one
     duration: 0.9,
@@ -51,6 +52,7 @@ const heroStoryTrack = {
     progress: 0,
     target: 0,
     tween: null,
+    isSettling: false,
     duration: 0.45,
     distance: 1120
 };
@@ -595,6 +597,16 @@ function startHeroTrack(track) {
     const isStory = track === heroStoryTrack;
     const write = isStory ? writeStoryProgress : writeExpandProgress;
 
+    // Set synchronously, and read synchronously by scrubHeroStory below. It must
+    // not be inferred from the tween — gsap's isActive() is false until the
+    // ticker has rendered the tween once, so a second wheel event arriving in the
+    // same frame saw "nothing is animating", handed the wheel to Lenis, and the
+    // page scrolled out from under the unfinished comma. Once it had scrolled,
+    // isHeroStoryActive()'s scrollY check failed and the gate stayed open for
+    // good. Fast trackpad flicks deliver several events per frame, which is why
+    // it only showed up when scrolling quickly.
+    track.isSettling = true;
+
     track.tween = gsap.to(track, {
         progress: track.target,
         duration: track.duration,
@@ -604,6 +616,7 @@ function startHeroTrack(track) {
             write(track.progress);
         },
         onComplete: function () {
+            track.isSettling = false;
             write(track.progress);
 
             if (track.progress >= 1) {
@@ -619,6 +632,7 @@ function cancelHeroScrub(track) {
         track.tween = null;
     }
 
+    track.isSettling = false;
     track.target = track.progress;
 }
 
@@ -634,7 +648,7 @@ export function scrubHeroStory(delta) {
     // While the eased progress is still catching up to the target the wheel stays
     // captured, otherwise the page would start scrolling underneath an animation
     // that has not finished playing.
-    const isSettling = !!track.tween && track.tween.isActive();
+    const isSettling = track.isSettling === true;
     const isConsumed = isSettling ||
         (delta > 0 && track.target < 1) ||
         (delta < 0 && track.target > 0);
