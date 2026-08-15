@@ -2,7 +2,7 @@
 
 An interactive portfolio exploring the space between design and architecture, condensing a four-year journey through architectural education into crafted interfaces, motion systems, visual experiments, and project case studies.
 
-![cover](assets/images/readme/cover.png)
+![cover](public/assets/readme.png)
 
 ## Highlights
 
