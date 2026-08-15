@@ -27,6 +27,11 @@
     --hero-side-pull: 0;
     --hero-side-scale: 1;
     --hero-side-cluster-shift: 96px;
+    /* How far the two copies additionally draw toward each other during the
+       scrub. It has to be a variable for the same reason the cluster shift is:
+       the two of them add up, and the gap they close into is far smaller on a
+       phone than on a desktop. */
+    --hero-side-pull-distance: 36px;
     --hero-comma-width: 24px;
     --hero-comma-height: 58px;
     --hero-comma-shift-y: 18px;
@@ -313,10 +318,15 @@
     color: white;
     z-index: 4;
     pointer-events: none;
+    /* The blur is what decides when this block becomes readable, not the opacity
+       — the copy is on screen well before it can be read. Keeping the transform
+       slower than the other two lets the block still settle upward after the
+       sentence has resolved, so shortening the blur does not flatten the
+       arrival into one instant. */
     transition:
-        opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-        filter 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.68s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero.is-expanded .content {
@@ -423,11 +433,11 @@
 }
 
 .hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-left .hero-visual-copy {
-    transform: translate3d(calc(var(--hero-side-pull) * 36px), 0, 0) scale(var(--hero-side-scale));
+    transform: translate3d(calc(var(--hero-side-pull) * var(--hero-side-pull-distance)), 0, 0) scale(var(--hero-side-scale));
 }
 
 .hero.is-story-scrubbing:not(.is-story-released) .hero-visual-side-right .hero-visual-copy {
-    transform: translate3d(calc(var(--hero-side-pull) * -36px), 0, 0) scale(var(--hero-side-scale));
+    transform: translate3d(calc(var(--hero-side-pull) * var(--hero-side-pull-distance) * -1), 0, 0) scale(var(--hero-side-scale));
 }
 
 .hero.is-story-complete .hero-visual-side-left {
@@ -504,7 +514,10 @@
     opacity: 0;
     transform: none;
     transition: opacity 0.2s ease;
-    transition-delay: 0.32s;
+    /* The scramble starts the moment .content gets is-intro-ready, so this delay
+       is time the line spends resolving where nobody can see it. Short enough
+       that the sentence arrives while it is still visibly decoding. */
+    transition-delay: 0.14s;
 }
 
 .description-track {
@@ -614,7 +627,12 @@
         padding: 8px;
         --hero-copy-gap: 10px;
         --hero-copy-edge-padding: 10px;
-        --hero-side-cluster-shift: 28px;
+        /* 28px, from when the story never ran at this width and these were dead
+           values. Live now, and the geometry is tight: each copy sits 12px off
+           centre, so the two of them are closing a 24px gap. Their shifts add,
+           so cluster + pull must stay under ~12px a side or the words overlap. */
+        --hero-side-cluster-shift: 6px;
+        --hero-side-pull-distance: 4px;
         --hero-comma-width: 11px;
         --hero-comma-height: 28px;
         --hero-comma-shift-y: 12px;
@@ -644,15 +662,21 @@
         animation: none;
     }
 
+    /* The gap the two copies leave around the comma. 12px a side was authored
+       when nothing moved at this width; with the scrub live they start here and
+       close inward, so the opening gap has to be wide enough to still read as a
+       gap once they have. 22px a side leaves 44px, closing to the original 24px
+       at full squeeze — the comma is 11px wide, so that ends at ~6px clear
+       either side rather than starting there. */
     .hero-visual-side-left {
-        right: calc(50% + 12px);
+        right: calc(50% + 22px);
         left: 8px;
         justify-content: flex-end;
         transform: translateY(-50%);
     }
 
     .hero-visual-side-right {
-        left: calc(50% + 12px);
+        left: calc(50% + 22px);
         right: 8px;
         justify-content: flex-start;
         transform: translateY(-50%);
@@ -752,18 +776,8 @@
         transition: none;
     }
 
-    /* entering goes straight to the comma, as it always did on touch */
-    .hero.is-entered .hero-visual {
-        width: 11px;
-        height: 28px;
-        border-radius: 0;
-        clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
-        transform: translate(-50%, -50%);
-        box-shadow: none;
-        opacity: 1;
-        background: var(--ink-strong);
-        transition: none;
-    }
+    /* The comma is scrubbed here too now: the unguarded rules above drive it at
+       every viewport size, so there is no touch-only jump to the end state. */
 
     /* On a wheel the scrim's opacity is read straight off --hero-expand-progress,
        so it arrives as gradually as the media does and must not be transitioned —

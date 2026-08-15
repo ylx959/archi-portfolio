@@ -99,7 +99,7 @@ function abandonProgrammaticScroll() {
     notifyScrollSettled(false);
 }
 
-function smoothScrollTo(targetY) {
+function smoothScrollTo(targetY, duration) {
     if (!lenis) {
         window.scrollTo(0, targetY);
         notifyScrollSettled(true);
@@ -109,7 +109,7 @@ function smoothScrollTo(targetY) {
     abandonProgrammaticScroll();
     isProgrammaticScrolling = true;
     lenis.scrollTo(targetY, {
-        duration: scrollDuration / 1000,
+        duration: (duration || scrollDuration) / 1000,
         easing: easeInOutCubic,
         // The overlays pause Lenis while they are open; a nav click that closes
         // one and scrolls in the same gesture must not be swallowed by the pause
@@ -122,7 +122,11 @@ function smoothScrollTo(targetY) {
     });
 }
 
-export function smoothScrollToSection(section) {
+// `options.duration` (ms) overrides the shared pace. The hero's hand-off into
+// the work wants a slower, weightier travel than a nav click does — a nav click
+// is a correction the visitor asked for and should feel immediate, the hand-off
+// is the site taking over.
+export function smoothScrollToSection(section, options) {
     if (!section) {
         return;
     }
@@ -134,7 +138,7 @@ export function smoothScrollToSection(section) {
     const sectionScrollOffset = parseFloat(computedStyles.getPropertyValue("--section-scroll-offset")) || 0;
     const targetY = window.scrollY + rect.top + overlapOffset + sectionScrollOffset;
 
-    smoothScrollTo(targetY);
+    smoothScrollTo(targetY, options && options.duration);
 }
 
 // The gate runs in the capture phase on window, which is the only place it can

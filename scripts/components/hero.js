@@ -42,6 +42,10 @@ const heroExpandTrack = {
     target: 0,
     tween: null,
     isSettling: false,
+    // Past this the act finishes itself — see the note on the story track.
+    // Later than the comma's: the expansion is the longer, more scenic act and
+    // is worth staying in charge of for most of its run.
+    takeoverProgress: 0.75,
     // long on purpose: the card keeps easing after the wheel stops, which is the
     // whole point of scrubbing it rather than tracking the wheel one to one
     duration: 0.9,
@@ -53,6 +57,7 @@ const heroStoryTrack = {
     target: 0,
     tween: null,
     isSettling: false,
+    takeoverProgress: 0.66,
     duration: 0.45,
     distance: 1120
 };
@@ -66,6 +71,17 @@ const magneticEase = gsap.parseEase("back.out(2.8)");
 // copy any longer just looks stuck. This is the point the rubber band lets go —
 // deliberately before the comma has finished forming.
 const heroStoryReleaseProgress = 0.82;
+
+// The hand-off travel into #projects. Slower than a nav click on purpose: with
+// the hold above at zero this is the whole of the transition, and at the shared
+// pace it arrived before the visitor had registered leaving.
+const heroHandoffScrollDuration = 1700;
+
+// How long the finished comma is held before the page moves to the work. Zero:
+// the comma settling *is* the beat, and anything on top of it reads as the page
+// having stalled — the wheel is dead for the whole of it, so there is nothing
+// the visitor can do but wait it out.
+const heroStoryHandoffDelay = 0;
 
 const heroTimers = {};
 
@@ -90,6 +106,8 @@ const heroIntroTiming = {
     thanksHold: 1400,
     // the drop reports when it lands; this is only the fallback
     cardDropTimeout: 2600,
+    // the description scramble runs 2.6s; this only fires if it never resolves
+    enterFormTimeout: 4200,
     // the hop-in runs ~4.0s; this is only the floor if it never reports
     ampersandTimeout: 5000,
     imageTimeout: 9000
@@ -127,11 +145,31 @@ function completeHeroExpand() {
         heroContent.classList.add("is-intro-ready");
     }
 
+    updateButtonState();
+
+    // The form waits for the sentence to finish resolving. Showing the input
+    // while the line is still noise asks the visitor to read and to type at the
+    // same time, and the eye goes to the caret — so the copy the scramble exists
+    // to deliver is the thing that gets skipped.
+    if (reducedMotionQuery.matches) {
+        revealEnterForm();
+        return;
+    }
+
+    // The race is a safety net, not the schedule: the scramble runs 2.6s, and if
+    // it ever failed to resolve the form would never appear and the site could
+    // not be entered at all.
+    Promise.race([
+        triggerHeroTextScramble(),
+        delay(heroIntroTiming.enterFormTimeout)
+    ]).then(revealEnterForm);
+}
+
+function revealEnterForm() {
     if (enterForm) {
         enterForm.classList.add("is-visible");
     }
 
-    triggerHeroTextScramble();
     updateButtonState();
 }
 
@@ -146,7 +184,7 @@ function completeHeroStory() {
     clearHeroTimer("autoScroll");
     heroState.isAwaitingAutoScroll = true;
     scheduleHeroTimer("autoScroll", 1000, function () {
-        smoothScrollToSection(projectsSection);
+        smoothScrollToSection(projectsSection, { duration: heroHandoffScrollDuration });
     });
 }
 
@@ -389,14 +427,18 @@ function setupDescriptionScrambleAnimation() {
     });
 }
 
+// Resolves once every line has finished resolving, so the enter form can wait
+// on it.
 function triggerHeroTextScramble() {
     // The sentence is split across explicit lines, so each line scrambles on its own.
-    document.querySelectorAll(".description-copy:not([aria-hidden='true']) .description-tail").forEach(function (tail) {
-        scrambleHeroText(tail, tail.getAttribute("aria-label") || tail.textContent.trim(), {
+    const tails = document.querySelectorAll(".description-copy:not([aria-hidden='true']) .description-tail");
+
+    return Promise.all(Array.from(tails).map(function (tail) {
+        return scrambleHeroText(tail, tail.getAttribute("aria-label") || tail.textContent.trim(), {
             duration: 2.6,
             speed: 0.055
         });
-    });
+    }));
 }
 
 // Mirrors what is being typed into the greeting that plays after entering.
@@ -497,10 +539,6 @@ function resetHeroFlowState() {
 // Held still whenever the wheel has nothing left to scrub but the page should
 // not move yet: waiting on the name, or waiting on act two to be released.
 export function isHeroScrollLocked() {
-    if (isHeroTouchMode()) {
-        return false;
-    }
-
     if (!hero) {
         return false;
     }
@@ -564,7 +602,10 @@ function writeStoryProgress(progress) {
 
 // Act one before entering, act two after — whichever is live owns the wheel.
 export function isHeroStoryActive() {
-    if (isHeroTouchMode() || reducedMotionQuery.matches) {
+    // Touch used to be excluded here. It is not any more — core/scroll.js already
+    // feeds touchmove deltas into the same scrub, so the comma runs at every
+    // viewport size. Only reduced motion still skips it.
+    if (reducedMotionQuery.matches) {
         return false;
     }
 
@@ -658,6 +699,14 @@ export function scrubHeroStory(delta) {
     }
 
     track.target = Math.max(0, Math.min(track.target + (delta / track.distance), 1));
+
+    // Close enough is committed: the wheel has made its intent plain, and asking
+    // for the remaining scrub only makes the visitor grind out an animation they
+    // have already decided on. Both acts do this, each at its own threshold.
+    if (track.target >= track.takeoverProgress) {
+        track.target = 1;
+    }
+
     startHeroTrack(track);
 
     return true;
@@ -718,20 +767,6 @@ function submitEnterForm() {
     }
     lockEnterForm(enteredName);
     unlockPage(enteredName);
-
-    if (isHeroTouchMode()) {
-        setHeroPhase(HERO_PHASES.MORPHED);
-        heroState.isStoryUnlocked = true;
-        heroState.isAwaitingAutoScroll = true;
-        scheduleHeroTimer("autoScroll", 900, function () {
-            const projectsSection = document.getElementById("projects");
-
-            if (projectsSection) {
-                smoothScrollToSection(projectsSection);
-            }
-        });
-        return;
-    }
 
     // Act two: the copy clears out, "Hello / <name>" arrives, and once it has
     // settled the wheel is handed the comma morph.

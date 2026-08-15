@@ -4,7 +4,11 @@ export const descriptionRevealDelay = 2000;
 
 export const descriptionRevealDuration = 4200;
 
-export const scrollDuration = 1600;
+// How long a programmatic scroll takes: the hero's hand-off to #projects, and
+// every floating-nav click. It eases in as well as out, so the first fifth of it
+// barely moves the page — which is why a long value reads as a pause before the
+// scroll rather than as a slow scroll.
+export const scrollDuration = 1150;
 
 export const projectImageBatchSize = 5;
 
