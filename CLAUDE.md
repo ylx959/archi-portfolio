@@ -104,7 +104,7 @@ Anything written in **CSS or `index.html`** addresses images as `/assets/…` in
 **Three seams keep the graph acyclic — use them instead of adding cross-component imports:**
 
 - `state.js` exposes `isEntered()` / `getDisplayName()` / `markEntered()` rather than bare variables, because an imported binding is read-only and only the hero may write it.
-- `scroll.js` owns the wheel and touch listeners but knows nothing about the hero. The hero registers `setScrollGate({ isLocked, isStoryActive, scrub })`; components that want to react to wheel activity or to a settled programmatic scroll register `onWheelActivity()` / `onScrollSettle()`.
+- `scroll.js` owns the wheel and touch listeners but knows nothing about the hero. The hero registers `setScrollGate({ isLocked, isStoryActive, scrub })`; components that want to react to wheel activity or to a settled programmatic scroll register `onWheelActivity()` / `onScrollSettle()`. **`onWheelActivity` is named for the wheel but means "the visitor is scrolling by hand"** — the touch path fires it too. It did not, once, and the floating nav simply never woke on a tablet.
 - `unlockPage()` dispatches `portfolio:entered` on `document`. The floating nav listens for it. Anything else gated on entry should listen too, not import from the hero.
 
 Subsystems worth knowing before editing:

@@ -208,7 +208,17 @@ function handleGateTouchMove(event) {
         event.preventDefault();
         event.stopPropagation();
         heroTouchStartY = currentY;
+        return;
     }
+
+    // Same two calls the wheel path makes once the gate has passed on the
+    // gesture: the visitor is driving the scroll, so anything listening for that
+    // should hear it, and a drag during a programmatic scroll means they have
+    // taken it back. `onWheelActivity` is named for the wheel but means "the
+    // visitor is scrolling by hand" — without this the floating nav only ever
+    // woke on a mouse, and stayed shut for the whole of a touch session.
+    abandonProgrammaticScroll();
+    notifyWheelActivity();
 }
 
 export function initScroll() {
