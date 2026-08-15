@@ -172,13 +172,15 @@ function handleGateWheel(event) {
     notifyWheelActivity();
 }
 
+// The baseline is recorded for every touch, not only while the story is already
+// active. Act two unlocks on a timer, so a finger can go down before the story
+// is live and still be dragging when it becomes live. Recording only in the
+// active case left that gesture with no baseline: the moment the lock lifted,
+// touchmove fell through without preventing anything, the browser scrolled the
+// page natively, and past 6px isHeroStoryActive() is false for good — so the
+// comma was skipped and the page ran straight on to the projects.
 function handleGateTouchStart(event) {
-    if (!scrollGate.isStoryActive() || !event.touches.length) {
-        heroTouchStartY = null;
-        return;
-    }
-
-    heroTouchStartY = event.touches[0].clientY;
+    heroTouchStartY = event.touches.length ? event.touches[0].clientY : null;
 }
 
 function handleGateTouchMove(event) {
@@ -188,7 +190,14 @@ function handleGateTouchMove(event) {
         return;
     }
 
-    if (heroTouchStartY === null || !event.touches.length) {
+    if (!event.touches.length) {
+        return;
+    }
+
+    // A gesture already in progress when the listeners had nothing to record
+    // against — adopt it here rather than sitting out the rest of the drag.
+    if (heroTouchStartY === null) {
+        heroTouchStartY = event.touches[0].clientY;
         return;
     }
 
