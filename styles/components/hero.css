@@ -360,8 +360,29 @@
     left: 50%;
     width: calc(var(--hero-card-width) - ((var(--hero-card-width) - var(--hero-comma-width)) * var(--hero-story-progress)));
     height: calc(var(--hero-media-height) - ((var(--hero-media-height) - var(--hero-comma-height)) * var(--hero-story-progress)));
-    border-radius: calc(30px + (999px * var(--hero-story-progress)));
-    clip-path: inset(0 round calc(30px + (999px * var(--hero-story-progress))));
+    /* The corner rounding hands over to the polygon rather than racing it: it
+       used to run 30px -> 999px and then snap to 0, which is what made a pill
+       out of the card on the way and left the comma's points to be recovered in
+       a single frame. */
+    border-radius: calc(30px * (1 - var(--hero-story-progress)));
+    /* One shape with the same seven points at both ends — the card is the comma
+       with its points parked on the rectangle's edges — so every frame is an
+       interpolation of the same polygon.
+
+       This was inset(0 round …) until progress 0.94 and a polygon() after it.
+       Those are two different basic shapes: CSS cannot interpolate between them
+       at all, so the mask changed in one frame. Worse, the threshold was
+       re-evaluated every frame from the scrub, so a wheel nudging back and forth
+       across 0.94 flipped the mask repeatedly — the flicker. */
+    clip-path: polygon(
+        calc(18% * var(--hero-story-progress)) 0,
+        100% 0,
+        100% 56%,
+        calc(100% - (36% * var(--hero-story-progress))) 100%,
+        calc(20% * var(--hero-story-progress)) 100%,
+        calc(46% * var(--hero-story-progress)) calc(100% - (46% * var(--hero-story-progress))),
+        calc(18% * var(--hero-story-progress)) calc(100% - (46% * var(--hero-story-progress)))
+    );
     transform: translate(-50%, calc(-50% + (var(--hero-comma-shift-y) * var(--hero-story-progress)))) rotate(calc(10deg * var(--hero-story-progress)));
     opacity: 1;
     box-shadow:
@@ -377,25 +398,23 @@
         opacity 0.8s ease;
 }
 
-.hero.is-comma-phase .hero-visual {
-    border-radius: 0;
-    clip-path: polygon(18% 0, 100% 0, 100% 56%, 64% 100%, 20% 100%, 46% 54%, 18% 54%);
-    background-position: center center;
-}
-
 /* Once the wheel takes over, every frame is written by JS — a transition here
-   would fight the scrub and lag a frame behind it. */
+   would fight the scrub and lag a frame behind it. Between them these two cover
+   every progress above 0; .is-comma-phase used to be listed here as well, which
+   was only ever a subset of .is-story-scrubbing. */
 .hero.is-story-scrubbing .hero-visual,
-.hero.is-story-complete .hero-visual,
-.hero.is-comma-phase .hero-visual {
+.hero.is-story-complete .hero-visual {
     transition: none;
 }
 
-.hero.is-story-scrubbing .hero-visual {
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, calc(0.16 - (0.06 * var(--hero-story-progress)))),
-        0 calc(38px - (22px * var(--hero-story-progress))) calc(110px - (64px * var(--hero-story-progress))) rgba(18, 15, 13, calc(0.28 - (0.17 * var(--hero-story-progress))));
-}
+/* The shadow is deliberately left at the resting value above and not
+   interpolated across the scrub — the same reason the base .hero-visual keeps
+   its own shadow static. A blurred shadow this size is re-rasterised whenever
+   any of its values change, and the scrub was changing three of them (offset,
+   blur and alpha) every frame, at a cost the comment on .hero-visual already
+   calls higher than everything else in the scrub combined. Nothing is lost
+   visually: clip-path clips the element's whole rendering, so the outer shadow
+   is cut away by the very mask that draws the comma. */
 
 /* The scrim only exists to carry the white hero copy over the expanded media.
    Once the name is in, the copy is gone and the card is the picture again. */

@@ -1,7 +1,7 @@
 .project-showcase {
     position: relative;
     z-index: 4;
-    padding: 22px var(--project-shell-padding) 40px;
+    padding: 22px var(--project-shell-padding) var(--project-shell-end-space);
     background: var(--paper);
 }
 
@@ -683,7 +683,7 @@
 
 @media (max-width: 768px) {
     .project-showcase {
-        padding: 18px 16px 32px;
+        padding: 18px 16px var(--project-shell-end-space);
     }
 
     .project-intro {

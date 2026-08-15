@@ -529,7 +529,12 @@ function syncHeroPhaseClasses() {
     hero.classList.toggle("is-story-scrubbing", isAfterEnter && heroStoryTrack.progress > 0 && heroStoryTrack.progress < 1);
     hero.classList.toggle("is-story-released", isAfterEnter && heroStoryTrack.progress >= heroStoryReleaseProgress);
     hero.classList.toggle("is-story-complete", isAfterEnter && heroStoryTrack.progress >= 1);
-    hero.classList.toggle("is-comma-phase", isAfterEnter && heroStoryTrack.progress >= 0.94);
+    // There was an is-comma-phase toggle here at progress >= 0.94, which swapped
+    // the mask from a rounded inset() to the comma polygon(). Two different basic
+    // shapes cannot interpolate, so the swap landed in one frame — and because
+    // this runs every frame of the scrub, a wheel crossing 0.94 in both
+    // directions flipped it back and forth. The mask is one polygon now and the
+    // scrub interpolates it, so there is no threshold left to cross.
 }
 
 function setHeroPhase(phase) {

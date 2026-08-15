@@ -25,6 +25,10 @@
     --ink-soft: #1f1d1b;
     --ink-muted: #8a867f;
     --project-shell-padding: 28px;
+    /* The run-out below the last row of cards. The drawings section follows
+       immediately — its --section-overlap is never written, so nothing slides
+       over this — and at the old 40px the grid ended almost flush against it. */
+    --project-shell-end-space: 200px;
     --project-card-scale: 0.985;
     --project-column-count: 3;
     --project-edge-inset: calc((100% / var(--project-column-count)) * ((1 - var(--project-card-scale)) / 2));
@@ -97,6 +101,7 @@ a {
 @media (max-width: 768px) {
     :root {
         --project-shell-padding: 16px;
+        --project-shell-end-space: 120px;
         --project-column-count: 1;
         --project-grid-inset: 2px;
         --project-grid-gutter: 14px;
