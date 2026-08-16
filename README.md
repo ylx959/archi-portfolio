@@ -13,7 +13,6 @@ An interactive architecture and design portfolio for YLX Studio, built around im
 - Project detail overlay with progressive image loading and blurred previews
 - Drawing archive with generated cards and full-screen detail viewing
 - Responsive desktop and mobile behavior, including reduced-motion support
-- Netlify-compatible SPA fallback through `public/_redirects`
 
 ## Built with
 
