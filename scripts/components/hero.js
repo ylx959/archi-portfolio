@@ -340,7 +340,11 @@ function startHeroIntroSequence() {
             // three pieces then fall in the same way the card did.
             hero.classList.add("is-intro-headline");
             heroExpandWords[0].textContent = "Architecture";
-            heroExpandWords[1].textContent = "&";
+            // The middle piece is the logo mark. It stays empty and wears
+            // `is-mark`, which paints it — the status lines that ran before this
+            // point cleared its textContent, and only the class survives that.
+            heroExpandWords[1].textContent = "";
+            heroExpandWords[1].classList.add("is-mark");
             heroExpandWords[2].textContent = "Design";
             return dropHeroPart("headline");
         })

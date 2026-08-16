@@ -39,15 +39,10 @@ const physics = {
     restTiltSpeed: 7
 };
 
-// Each thing that can fall: where its variables go, and how much it deforms.
-// The headline pieces are separate bodies — one rigid line dropping as a slab
-// looks like a panel, pieces landing a beat apart look like objects.
-//
-// The "&" is deliberately not among them. It does not fall at all: it hops in
-// from the right edge afterwards, and hero-ampersand.js owns that — including
-// the same --hero-word-drop-* variables this file writes for the other two.
-const words = Array.from(document.querySelectorAll(".hero-expand-word:not(.hero-expand-word-mid)"));
-
+// Each thing that can fall. The card is the only one left: the headline used to
+// fall as three separate bodies here, but "Architecture" and "Design" now grow
+// in by weight instead (hero-headline.js), and the "&" has never fallen — it
+// hops in from the right edge afterwards, which hero-ampersand.js owns.
 const droppers = {
     card: {
         element: document.getElementById("heroVisual"),
@@ -62,26 +57,6 @@ const droppers = {
         droppingClass: "is-card-dropping"
     }
 };
-
-words.forEach(function (element, index) {
-    droppers["word" + index] = {
-        element: element,
-        prefix: "--hero-word-drop",
-        // Text has less apparent mass than the card, so it deforms less —
-        // squashing type as hard as a panel reads as a bug.
-        maxSquash: 0.1,
-        spread: 0.4,
-        // Slightly different weights so they do not bounce in lockstep, and
-        // alternating lean so they do not all tip the same way.
-        gravityScale: 1 + ((index - 1) * 0.09),
-        tiltScale: 1 + ((index % 2) * 0.35),
-        leanSeed: index % 2 === 0 ? 1 : -1
-    };
-});
-
-// Dropping the headline means dropping its pieces, staggered, and reporting once
-// the last one has stopped moving.
-const WORD_STAGGER = 95;
 
 function write(dropper) {
     const element = dropper.element;
@@ -174,48 +149,6 @@ function step(name, dropper, now) {
     });
 }
 
-function dropHeadline() {
-    const names = words.map(function (element, index) {
-        return "word" + index;
-    });
-
-    if (!names.length) {
-        document.dispatchEvent(new CustomEvent("portfolio:hero-dropped", { detail: { target: "headline" } }));
-        return;
-    }
-
-    let remaining = names.length;
-
-    function onePieceLanded(event) {
-        if (names.indexOf(event.detail.target) === -1) {
-            return;
-        }
-
-        remaining -= 1;
-
-        if (remaining > 0) {
-            return;
-        }
-
-        document.removeEventListener("portfolio:hero-dropped", onePieceLanded);
-        document.dispatchEvent(new CustomEvent("portfolio:hero-dropped", { detail: { target: "headline" } }));
-    }
-
-    document.addEventListener("portfolio:hero-dropped", onePieceLanded);
-
-    // Park them all now, in this frame: a piece waiting its turn must not be
-    // visible at its resting place while the one before it is still falling.
-    names.forEach(function (name) {
-        park(droppers[name]);
-    });
-
-    names.forEach(function (name, index) {
-        window.setTimeout(function () {
-            drop(name);
-        }, index * WORD_STAGGER);
-    });
-}
-
 // Lift a body clear of the top of the frame, whatever size it happens to be.
 function park(dropper) {
     if (!dropper || !dropper.element) {
@@ -239,11 +172,6 @@ function park(dropper) {
 }
 
 function drop(name) {
-    if (name === "headline") {
-        dropHeadline();
-        return;
-    }
-
     const dropper = droppers[name];
 
     if (!dropper || !dropper.element) {
@@ -303,8 +231,10 @@ export function initHeroDrop() {
         // for one of *its* elements going missing, and it must not fire for a
         // target another component owns. It did: the ampersand's request landed
         // here too, this file answered "dropped" for it on the spot, and the
-        // intro stopped waiting while the ampersand was still mid-hop.
-        if (target !== "headline" && !droppers[target]) {
+        // intro stopped waiting while the ampersand was still mid-hop. The
+        // headline is now someone else's too, which is why there is no longer an
+        // exception carved out for it here.
+        if (!droppers[target]) {
             return;
         }
 

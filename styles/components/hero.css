@@ -41,6 +41,15 @@
     --hero-comma-width: 24px;
     --hero-comma-height: 58px;
     --hero-comma-shift-y: 18px;
+    /* The comma's tail and the card's rounded corners are the same corner, and
+       they used to run on the same clock: the tail started opening on the very
+       first frame of the scrub, while the bottom-left was still carrying a 26px
+       radius. A sharp little spur growing out of a round corner is what that
+       looked like. These two split the scrub between them instead — the rounding
+       is gone by the halfway mark, and only then does the tail start to open, so
+       the two never share the corner. */
+    --hero-comma-round: clamp(0, calc((0.5 - var(--hero-story-progress)) / 0.5), 1);
+    --hero-comma-tail: clamp(0, calc((var(--hero-story-progress) - 0.55) / 0.45), 1);
 }
 
 .hero-main-image {
@@ -118,7 +127,12 @@
     transform: translateY(-50%);
     pointer-events: none;
     color: var(--ink-strong);
-    font-family: "EB Garamond", "Iowan Old Style", "Times New Roman", serif;
+    /* Petrona rather than EB Garamond, and the reason is the entrance: the
+       headline grows in by weight, so it needs axis room *below* its resting
+       weight to start from. EB Garamond's variable axis bottoms out at 400,
+       which is where this line rests — there was nowhere to grow from.
+       Petrona's runs 100..900. See hero-headline.js. */
+    font-family: "Petrona", "Iowan Old Style", "Times New Roman", serif;
     font-size: clamp(1.3rem, 4.4vw, 4.5rem);
     /* an old-style serif has no hairline weight, and its own proportions carry
        the line — so no negative tracking either */
@@ -141,6 +155,29 @@
         translate3d(var(--hero-word-drop-x, 0px), var(--hero-word-drop-y, 0px), 0)
         rotate(var(--hero-word-drop-rot, 0deg))
         scale(var(--hero-word-drop-scale-x, 1), var(--hero-word-drop-scale-y, 1));
+}
+
+/* Only present while the entrance is running — hero-headline.js splits the two
+   words into characters to give each its own weight, then puts the plain text
+   back once the wave has passed, so the resting headline keeps its kerning. */
+.hero-expand-char {
+    display: inline-block;
+    font-variation-settings: "wght" var(--char-wght, 400);
+    opacity: var(--char-reveal, 1);
+}
+
+/* The middle piece is the logo mark, not an "&". It is painted as a mask rather
+   than dropped in as markup because hero.js clears and rewrites the three words
+   with textContent all through the intro — a child element would not survive
+   that, and a background-image would not take the headline's colour. As a mask
+   over currentColor it inherits --ink-strong and the title's own fade, and the
+   span stays the empty inline-block the hop animation already drives. */
+.hero-expand-word-mid.is-mark {
+    height: 0.72em;
+    aspect-ratio: 531.068 / 584.057;
+    background-color: currentColor;
+    -webkit-mask: url("/assets/icons/logo-mark.svg") center / contain no-repeat;
+    mask: url("/assets/icons/logo-mark.svg") center / contain no-repeat;
 }
 
 .hero-expand-word-left {
@@ -178,6 +215,23 @@
 .hero.is-intro-loading .hero-expand-hint {
     opacity: 0;
     animation: none;
+}
+
+/* The "Hello / <name>" stage is the second place the page stops and waits for a
+   scroll it never asked for out loud, so the hint comes back for it. It is the
+   same element and the same pulse — a second hint would be a second thing to
+   keep in step.
+
+   It leaves again as soon as the comma scrub starts, because by then the gesture
+   is already happening and the invitation is stale. The transition lives here
+   rather than on the base rule on purpose: the base opacity is read straight off
+   --hero-expand-progress, which is scrubbed by the wheel, and a transition on
+   that would make the hint lag the visitor's own hand. Here there is nothing
+   being scrubbed, so it can afford to fade. */
+.hero.is-morph-complete:not(.is-story-scrubbing):not(.is-story-complete) .hero-expand-hint {
+    opacity: 1;
+    transition: opacity 0.55s ease 0.35s;
+    animation: hero-expand-hint-pulse 2.4s ease-in-out infinite;
 }
 
 /* The headline and the hint are static markup, so they paint with the HTML —
@@ -364,7 +418,7 @@
        used to run 30px -> 999px and then snap to 0, which is what made a pill
        out of the card on the way and left the comma's points to be recovered in
        a single frame. */
-    border-radius: calc(30px * (1 - var(--hero-story-progress)));
+    border-radius: calc(30px * var(--hero-comma-round));
     /* One shape with the same seven points at both ends — the card is the comma
        with its points parked on the rectangle's edges — so every frame is an
        interpolation of the same polygon.
@@ -380,14 +434,31 @@
         100% 56%,
         calc(100% - (36% * var(--hero-story-progress))) 100%,
         calc(20% * var(--hero-story-progress)) 100%,
-        calc(46% * var(--hero-story-progress)) calc(100% - (46% * var(--hero-story-progress))),
-        calc(18% * var(--hero-story-progress)) calc(100% - (46% * var(--hero-story-progress)))
+        /* The tail's two points. Both start folded flat onto the bottom edge and
+           onto the left edge's own x, so at --hero-comma-tail: 0 they are
+           degenerate and cut nothing — the corner is whatever border-radius says
+           it is. The 28% is what the x has left to travel once it is unfolding
+           from the left edge rather than from zero, so the pair still lands on
+           the original 46%/54% at the end of the scrub. */
+        calc((18% * var(--hero-story-progress)) + (28% * var(--hero-comma-tail))) calc(100% - (46% * var(--hero-comma-tail))),
+        calc(18% * var(--hero-story-progress)) calc(100% - (46% * var(--hero-comma-tail)))
     );
     transform: translate(-50%, calc(-50% + (var(--hero-comma-shift-y) * var(--hero-story-progress)))) rotate(calc(10deg * var(--hero-story-progress)));
     opacity: 1;
-    box-shadow:
-        inset 0 1px 0 rgb(var(--paper-rgb) / 0.16),
-        0 38px 110px rgb(var(--ink-rgb) / 0.28);
+    /* Inset only. There used to be a `0 38px 110px rgb(var(--ink-rgb) / 0.28)`
+       drop shadow here and it could never work: the clip-path above is a
+       rectangle, and an outer box-shadow is painted outside the *rounded* border
+       box, so the clip cut the shadow away everywhere it was meant to be seen
+       and kept it in the only place it was not — the four little wedges between
+       each rounded corner and the square corner of the clip. Those wedges were
+       the grey corners. Measured, they sat at 247/255 against a white page while
+       the card's straight edges had no shadow at all.
+
+       So this is not a shadow being toned down; it is a shadow that was already
+       fully clipped, minus its own artefact. If the card should carry one during
+       act two it has to come from something the clip-path does not touch — a
+       layer behind .hero-visual, not a property on it. */
+    box-shadow: inset 0 1px 0 rgb(var(--paper-rgb) / 0.16);
     transition:
         width 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
         height 2.08s cubic-bezier(0.2, 0.9, 0.22, 1),
@@ -589,7 +660,14 @@
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
-    opacity: 0.02;
+    /* Zero, not the 0.02 this used to carry. The form is held back until the
+       description has finished scrambling, and for that whole window .content is
+       already fully opaque — so 2% was 2% of a white input pill and a white
+       glow painted straight onto the expanded photo. Measured against the same
+       frame with the form at 0 it lifted those pixels by up to 4/255 in a hard
+       pill-shaped patch, which on a smooth area of the picture is exactly the
+       faint band it looked like. */
+    opacity: 0;
     transform: none;
     filter: none;
     pointer-events: none;

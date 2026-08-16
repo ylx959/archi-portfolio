@@ -12,6 +12,7 @@ import { initFloatingNav } from "./components/floating-nav.js";
 import { initHero } from "./components/hero.js";
 import { initHeroAmpersand } from "./components/hero-ampersand.js";
 import { initHeroDrop } from "./components/hero-drop.js";
+import { initHeroHeadline } from "./components/hero-headline.js";
 import { initProjectDetail } from "./components/project-detail.js";
 import { initProjectGrid } from "./components/project-grid.js";
 import { initScroll } from "./core/scroll.js";
@@ -20,6 +21,7 @@ import { initSections } from "./core/sections.js";
 function start() {
     initHero();
     initHeroDrop();
+    initHeroHeadline();
     initHeroAmpersand();
     initScroll();
     initSections();
