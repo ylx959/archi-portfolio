@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 780" fill="none" aria-labelledby="title">
+  <title>YLX logo</title>
+  <g stroke="#3f4347" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <polyline points="125 112 320 382 320 660" />
+    <polyline points="320 382 516 112 516 660 780 660 1115 112" />
+    <line x1="790" y1="112" x2="1115" y2="660" />
+  </g>
+</svg>

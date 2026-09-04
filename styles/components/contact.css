@@ -1,0 +1,272 @@
+.contact-section {
+    --section-overlap: var(--contact-section-overlap);
+    position: relative;
+    z-index: 1;
+    margin-top: calc(var(--section-overlap) * -1);
+    padding: calc(var(--section-overlap) + 28px) var(--project-shell-padding) 72px;
+    min-height: 100vh;
+    background: #f4f4f1;
+    transform: translate3d(0, calc((1 - var(--section-separate, 0)) * var(--section-overlap) * -1), 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    contain: paint;
+    overflow: hidden;
+}
+
+.contact-ripple-field {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* dot alpha is painted per pass in the canvas, so the layer stays at full opacity */
+    opacity: 1;
+}
+
+.contact-shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+.contact-layout {
+    display: grid;
+    grid-template-columns: minmax(140px, 0.45fr) minmax(0, 1.55fr);
+    gap: 56px;
+    width: calc(100% - (var(--project-edge-inset) * 2));
+    margin: 0 auto 120px;
+    align-items: start;
+}
+
+.contact-mark {
+    display: block;
+    width: clamp(120px, 14vw, 190px);
+    height: auto;
+    margin-top: 42px;
+}
+
+.contact-main {
+    display: grid;
+    gap: 32px;
+    max-width: 560px;
+    align-content: start;
+    padding-top: 42px;
+}
+
+.contact-group {
+    display: grid;
+    gap: 14px;
+}
+
+.contact-label {
+    font-size: 1rem;
+    color: #201d1a;
+}
+
+.contact-chip-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.contact-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 10px;
+    background: #dfdfdf;
+    color: var(--ink);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.contact-signup-block {
+    max-width: 520px;
+}
+
+.contact-signup {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 6px;
+    border-radius: 14px;
+    background: #efefef;
+}
+
+.contact-input {
+    min-width: 0;
+    padding: 6px 10px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1rem;
+    /* One line of an address, so it gets a line box its own size. Inheriting the
+       body's leading is what made the pill taller than the button inside it. */
+    line-height: 1.2;
+}
+
+.contact-input::placeholder {
+    color: #9a9ea7;
+}
+
+.contact-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(38, 38, 40, 0.52);
+    color: rgb(var(--paper-rgb) / 0.94);
+    backdrop-filter: blur(14px) saturate(135%);
+    -webkit-backdrop-filter: blur(14px) saturate(135%);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    box-shadow:
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.16),
+        0 4px 12px rgb(var(--ink-rgb) / 0.08);
+    transition: background 0.28s ease, color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.contact-submit-text {
+    display: inline-block;
+}
+
+.contact-submit:hover,
+.contact-submit:focus-visible {
+    background: rgba(54, 54, 58, 0.64);
+    color: var(--paper);
+    box-shadow:
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.2),
+        0 6px 14px rgb(var(--ink-rgb) / 0.12);
+    outline: none;
+}
+
+.contact-submit:hover .contact-submit-text,
+.contact-submit:focus-visible .contact-submit-text {
+    animation: contact-submit-scroll 0.56s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
+}
+
+.contact-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 36px;
+    width: calc(100% - (var(--project-edge-inset) * 2));
+    margin: 0 auto;
+    align-items: end;
+}
+
+.contact-footer-left,
+.contact-socials {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.contact-footer-left {
+    align-items: flex-end;
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+}
+
+.contact-footer-right {
+    display: flex;
+    align-items: flex-end;
+    justify-items: start;
+}
+
+.contact-socials a {
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    line-height: 1;
+    text-decoration: none;
+    transition: color 0.28s ease;
+}
+
+.contact-socials a:hover,
+.contact-socials a:focus-visible {
+    color: var(--ink-strong);
+    outline: none;
+}
+
+@keyframes contact-submit-scroll {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    35% {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    36% {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 1080px) {
+    .contact-layout {
+        grid-template-columns: 1fr;
+        gap: 36px;
+    }
+
+    .contact-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-section {
+        padding-bottom: 56px;
+        min-height: 100vh;
+    }
+
+    .contact-layout,
+    .contact-footer {
+        width: 100%;
+    }
+
+    .contact-layout {
+        margin-bottom: 64px;
+    }
+
+    .contact-mark {
+        margin-top: 0;
+    }
+
+    .contact-main {
+        padding-top: 0;
+    }
+
+    .contact-signup {
+        grid-template-columns: 1fr;
+    }
+
+    /* The desktop pill is slimmer than a comfortable touch target, and on a
+       phone this button is the one the finger actually goes for. */
+    .contact-submit {
+        width: 100%;
+        padding: 14px 20px;
+    }
+}

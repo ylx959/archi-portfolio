@@ -1,0 +1,330 @@
+.drawings-section {
+    --section-overlap: 0px;
+    --section-scroll-offset: 0px;
+    --drawings-content-offset: 24px;
+    --drawings-surface-color: #fcfaf5;
+    position: relative;
+    z-index: 5;
+    margin-top: 0;
+    padding: calc(28px + var(--drawings-content-offset)) var(--project-shell-padding) 40px;
+    min-height: calc(100vh + 72px);
+    background: var(--drawings-surface-color);
+    transform: translate3d(0, calc((1 - var(--section-separate, 0)) * var(--section-overlap) * -1), 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    contain: paint;
+}
+
+.drawings-shell {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(280px, 0.68fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: start;
+    width: min(1320px, calc(100% - (var(--project-edge-inset) * 2)));
+    margin: 0 auto;
+    min-height: min(100vh, 980px);
+}
+
+.drawings-hero {
+    grid-column: 2;
+    position: sticky;
+    top: 148px;
+    z-index: 2;
+    width: 100%;
+    margin: 0;
+    padding-top: 0;
+    text-align: right;
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.32s ease;
+    pointer-events: none;
+}
+
+.drawings-section.is-active .drawings-hero {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* The heading is written, not typed: drawings-signature.js replaces the text
+   below with one SVG per line and reveals each through a masked stroke. The
+   font-size here is still what drives it — the SVGs are sized in em — so the
+   two sizings cannot drift apart. Until the module runs, the plain text is what
+   shows, which is also what a visitor without JavaScript keeps. */
+.drawings-title {
+    font-family: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+    max-width: none;
+    margin-bottom: 0;
+    color: var(--ink-strong);
+    font-size: clamp(2.9rem, 5.8vw, 5.45rem);
+    line-height: 0.92;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-transform: none;
+}
+
+/* Only reached when the module has not run: it keeps the two-part heading
+   readable in plain text. */
+.drawings-title-subline {
+    font-size: 0.52em;
+}
+
+.drawings-signature-line {
+    display: block;
+    margin-left: auto;
+    overflow: visible;
+}
+
+/* The subline is the signature under the statement, so it is smaller and sits
+   slightly under the line above it. */
+.drawings-signature-line-sub {
+    margin-top: 0.1em;
+    font-size: 0.52em;
+}
+
+.drawings-signature-text {
+    fill: var(--ink-strong);
+    font-family: inherit;
+    font-weight: inherit;
+}
+
+/* The offset is written by JS on every frame of the scrub; the dasharray is set
+   once from the measured path. Nothing here may transition — a transition would
+   fight the scrub for control of the same value. */
+.drawings-signature-stroke {
+    transition: none;
+}
+
+.drawings-carousel {
+    grid-column: 1;
+    position: relative;
+    width: 100%;
+    margin: -28px 0 0;
+}
+
+.drawings-viewport {
+    position: relative;
+    overflow: visible;
+}
+
+.drawings-track {
+    display: block;
+    /* Where each card parks, and how far the one after it parks below — read by
+       drawings.js too, so the resting position is stated once rather than being
+       kept in step by hand on both sides. */
+    --drawings-stack-top: 148px;
+    --drawings-stack-step: 14px;
+    /* The top padding is the lead-in, and it is the signature's runway: the
+       heading writes itself across this stretch and the first card arrives on
+       the last stroke. It is longer than the heading alone needs because a hand
+       writing three lines needs the distance — see the scrub in
+       drawings-signature.js, which ends exactly where the first card parks. */
+    padding: 70vh 0 56vh;
+}
+
+.drawings-card {
+    position: sticky;
+    top: calc(var(--drawings-stack-top) + (var(--drawings-card-index, 0) * var(--drawings-stack-step)));
+    width: min(560px, calc(100% - 160px));
+    margin-inline: auto;
+    margin-bottom: 30vh;
+    z-index: calc(20 + var(--drawings-card-index, 0));
+    background: transparent;
+    cursor: pointer;
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.92));
+    transform-origin: center top;
+    will-change: transform;
+    transition: transform 0.16s linear;
+}
+
+.drawings-card + .drawings-card {
+    margin-top: -13vh;
+}
+
+.drawings-card::before {
+    display: none;
+}
+
+.drawings-media-wrap {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    padding: 15px;
+    border-radius: 24px;
+    margin-bottom: 0;
+    background: var(--paper);
+    border: 1px solid rgb(var(--ink-rgb) / 0.05);
+    /* The cast layers are scaled by --drawings-card-shadow, which drawings.js
+       drops toward zero as the card behind gets covered. They spread 22px and
+       44px, far wider than the 9-14px the stack steps by, so at full strength
+       every parked card lays its whole shadow on the one below and four of them
+       read as a grey band rather than as four cards. The inset highlight and the
+       hairline are not scaled — those are the card's own edge, not depth it
+       casts onto anything. */
+    box-shadow:
+        0 1px 0 rgb(var(--paper-rgb) / 0.9) inset,
+        0 0 0 1px rgb(var(--paper-rgb) / 0.28),
+        0 2px 5px rgb(var(--ink-rgb) / calc(0.018 * var(--drawings-card-shadow, 1))),
+        0 10px 22px rgb(var(--ink-rgb) / calc(0.032 * var(--drawings-card-shadow, 1))),
+        0 24px 44px rgb(var(--ink-rgb) / calc(0.028 * var(--drawings-card-shadow, 1)));
+}
+
+.drawings-index {
+    position: absolute;
+    top: 15px;
+    right: 13px;
+    color: #4a4641;
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.drawings-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    object-position: center;
+    background: var(--paper);
+    transform: scale(1.03);
+    transform-origin: center center;
+    transition: transform 0.7s ease, filter 0.7s ease;
+}
+
+.drawings-caption {
+    position: absolute;
+    left: 15px;
+    bottom: 15px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(242, 242, 238, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0.96;
+    transform: translateY(0);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.drawings-caption h3 {
+    margin-bottom: 3px;
+    color: var(--ink-strong);
+    font-size: 0.95rem;
+    font-weight: 400;
+}
+
+.drawings-caption p {
+    color: #5f5953;
+    font-size: 0.63rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.drawings-card:hover .drawings-image,
+.drawings-card:focus-within .drawings-image {
+    transform: scale(1.05);
+    filter: saturate(1.02);
+}
+
+.drawings-card:hover .drawings-caption,
+.drawings-card:focus-within .drawings-caption {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 1080px) {
+    .drawings-card {
+        width: min(480px, calc(100% - 80px));
+    }
+}
+
+@media (max-width: 768px) {
+    .drawings-section {
+        --drawings-content-offset: 18px;
+        padding-bottom: 28px;
+        min-height: calc(100vh + 48px);
+    }
+
+    .drawings-hero,
+    .drawings-carousel {
+        width: 100%;
+    }
+
+    .drawings-shell {
+        display: block;
+        width: 100%;
+        margin: 0;
+    }
+
+    .drawings-hero {
+        position: static;
+        padding-top: 0;
+        margin: 0 0 32px;
+        text-align: left;
+    }
+
+    .drawings-title {
+        font-size: 2.6rem;
+    }
+
+    /* Left-aligned here, so the lines must not be pushed to the right edge. */
+    .drawings-signature-line {
+        margin-left: 0;
+    }
+
+    /* The cards stack here as well, just tighter: a phone parks them higher up
+       (there is no sticky heading beside them to clear) and steps them by less,
+       because ten cards at the desktop step would walk off the bottom of a short
+       screen. The lead-in and the gaps are scaled down to match. */
+    .drawings-track {
+        display: block;
+        --drawings-stack-top: 88px;
+        --drawings-stack-step: 9px;
+        padding: 22vh 0 26vh;
+    }
+
+    .drawings-card {
+        width: calc(100% - 12px);
+        margin-inline: auto;
+        margin-bottom: 20vh;
+    }
+
+    .drawings-card + .drawings-card {
+        margin-top: -9vh;
+    }
+
+    .drawings-card::before {
+        display: none;
+    }
+
+    .drawings-media-wrap {
+        padding: 12px;
+        border-radius: 22px;
+    }
+
+    .drawings-caption {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+    }
+
+    /* Neutralises the desktop hover spread, but must not flatten the transform:
+       that is where the stack's scale lives, and a tap leaves :hover stuck on a
+       touch screen — the card under the finger would drop out of the stack. */
+    .drawings-track:hover .drawings-card,
+    .drawings-track:focus-within .drawings-card,
+    .drawings-card:hover,
+    .drawings-card:focus-within {
+        width: calc(100% - 12px);
+        transform: translate3d(0, 0, 0) scale(var(--drawings-card-scale, 0.94));
+    }
+
+    .drawings-card:hover .drawings-image,
+    .drawings-card:focus-within .drawings-image {
+        transform: scale(1.03);
+        filter: none;
+    }
+}
+

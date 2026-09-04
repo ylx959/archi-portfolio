@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# The site has a build step now, so main is the source and dist/ is the artifact —
+# dist/ is never committed. Enable this once under
+# Settings → Pages → Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push supersedes one still in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # Catches the one class of mistake that fails silently on the live site:
+      # data that is well-formed but wrong. Exits 1 on an error, 0 on warnings.
+      - name: Check project data
+        run: node scripts/check-data.js
+
+      - name: Build
+        run: npm run build
+        env:
+          # A project page is served from https://<user>.github.io/<repo>/, so the
+          # built URLs need that prefix. Taking it from the repository name means
+          # a rename cannot leave it stale. If a custom domain is ever added
+          # (a CNAME file serving the site from the domain root), set this to "/".
+          VITE_BASE: /${{ github.event.repository.name }}/
+
+      # ~170 MB, almost all of it the photography under public/assets.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

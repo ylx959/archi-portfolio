@@ -1,0 +1,419 @@
+/* The floating section nav, in Apple's liquid-glass idiom.
+
+   Glass is built from three stacked layers rather than one background, because
+   a single translucent fill reads as frosted plastic, not glass:
+
+     ::before  the refractive body — blurs and bends what is behind it
+     the lens  .section-floating-highlight, a second, stronger piece of glass
+               that slides between links
+     ::after   the specular rim — a bright top-left edge and a dimmer
+               bottom-right one, which is what makes the pill look convex
+
+   The bend itself is `backdrop-filter: url(#liquidGlassDistortion)`, which only
+   Chromium actually paints. It therefore sits on .section-floating-refraction,
+   a layer of its own rather than on ::before: a browser that ignores the filter
+   is left with an empty transparent span and still gets the ::before layer
+   underneath. Folding it into ::before would have made a browser that parses
+   url() but paints nothing lose the blur along with the bend.
+
+   The blur is deliberately small. Glass refracts; it does not frost. Most of the
+   depth here comes from the displacement and the rim, so a heavy backdrop blur
+   only buys milk — it reads as sandblasted acrylic rather than as a lens. */
+
+.liquid-glass-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.section-floating-nav {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    z-index: 14;
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    isolation: isolate;
+    width: min(calc(100% - 48px), 620px);
+    padding: 6px;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    box-shadow:
+        0 1px 2px rgb(var(--shadow-rgb) / 0.02),
+        0 6px 16px rgb(var(--shadow-rgb) / 0.04),
+        0 16px 32px rgb(var(--shadow-rgb) / 0.03);
+    transform: translateX(-50%) translateY(-22px) scale(0.97);
+    opacity: 0;
+    pointer-events: none;
+    --nav-highlight-x: 6px;
+    --nav-highlight-y: 6px;
+    --nav-highlight-width: 0px;
+    --nav-highlight-height: 0px;
+    --nav-highlight-scale-x: 1;
+    --nav-highlight-scale-y: 1;
+    --nav-glow-x: 20%;
+    transition:
+        opacity 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.78s cubic-bezier(0.2, 1.22, 0.28, 1),
+        box-shadow 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.82s cubic-bezier(0.22, 1, 0.36, 1),
+        padding 0.82s cubic-bezier(0.22, 1, 0.36, 1),
+        gap 0.82s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The refractive body. The radial gradient is the ambient light on the glass and
+   tracks the lens through --nav-glow-x, so the pill brightens where the
+   selection sits instead of being lit uniformly. */
+.section-floating-nav::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background:
+        radial-gradient(120% 180% at var(--nav-glow-x, 50%) 0%, rgb(var(--paper-rgb) / 0.26), transparent 62%),
+        linear-gradient(180deg, rgb(var(--paper-rgb) / 0.16), rgb(var(--paper-rgb) / 0.06));
+    backdrop-filter: blur(2px) saturate(155%) brightness(1.04);
+    -webkit-backdrop-filter: blur(2px) saturate(155%) brightness(1.04);
+    transition: background 0.42s ease;
+}
+
+/* The bend. No mask here: the map is neutral grey through the middle and only
+   carries displacement towards the rim, so it already confines the distortion to
+   the edge on its own. */
+.section-floating-refraction {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    backdrop-filter: url(#liquidGlassDistortion);
+    -webkit-backdrop-filter: url(#liquidGlassDistortion);
+}
+
+/* The specular rim. Two opposed inset edges — bright at the top-left, softer at
+   the bottom-right — plus a hairline all the way round. Kept above the lens so
+   the rim never gets covered as the lens slides under it. */
+.section-floating-nav::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 0 0 0 1px rgb(var(--paper-rgb) / 0.34),
+        inset 1.5px 1.5px 0 rgb(var(--paper-rgb) / 0.7),
+        inset -1.5px -1.5px 1px rgb(var(--paper-rgb) / 0.4),
+        inset 0 -14px 22px rgb(var(--paper-rgb) / 0.08);
+}
+
+.section-floating-nav.is-jelly-moving {
+    transform: translateX(-50%) translateY(0) scale(1.024, 0.982);
+}
+
+.section-floating-nav.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.section-floating-nav.is-visible.is-jelly-moving {
+    transform: translateX(-50%) translateY(0) scale(1.024, 0.982);
+}
+
+.section-floating-nav.is-collapsed {
+    width: 68px;
+    gap: 0;
+    padding-inline: 6px;
+}
+
+/* The lens: a thicker piece of the same glass. Its own backdrop-filter samples
+   the ::before layer beneath it, so the selection reads as glass over glass
+   rather than as a painted pill. */
+.section-floating-highlight {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    width: var(--nav-highlight-width);
+    height: var(--nav-highlight-height);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(var(--paper-rgb) / 0.44), rgb(var(--paper-rgb) / 0.2));
+    backdrop-filter: blur(0.5px) saturate(150%) brightness(1.16);
+    -webkit-backdrop-filter: blur(0.5px) saturate(150%) brightness(1.16);
+    box-shadow:
+        inset 0 0 0 1px rgb(var(--paper-rgb) / 0.46),
+        inset 1px 1px 0 rgb(var(--paper-rgb) / 0.88),
+        inset -1px -1px 0 rgb(var(--paper-rgb) / 0.46),
+        0 1px 1px rgb(var(--shadow-rgb) / 0.02),
+        0 3px 8px rgb(var(--shadow-rgb) / 0.04);
+    opacity: 0;
+    transform: translate3d(var(--nav-highlight-x), var(--nav-highlight-y), 0) scale(var(--nav-highlight-scale-x), var(--nav-highlight-scale-y));
+    transform-origin: center;
+    transition:
+        opacity 0.22s ease,
+        width 0.64s cubic-bezier(0.16, 1.58, 0.26, 1),
+        height 0.64s cubic-bezier(0.16, 1.58, 0.26, 1),
+        transform 0.64s cubic-bezier(0.16, 1.58, 0.26, 1);
+}
+
+/* The sheen that runs across the lens as it settles — the glancing highlight a
+   curved surface picks up when it stops moving. */
+.section-floating-highlight::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(112deg, transparent 22%, rgb(var(--paper-rgb) / 0.68) 46%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.section-floating-nav.has-jelly-target .section-floating-highlight {
+    opacity: 1;
+}
+
+.section-floating-nav.is-jelly-moving .section-floating-highlight::after {
+    opacity: 1;
+    transition: opacity 0.16s ease;
+}
+
+.section-floating-nav.is-collapsed .section-floating-highlight {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.18, 0.82);
+    transition: opacity 0.16s ease;
+}
+
+.section-floating-links {
+    position: relative;
+    z-index: 4;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    transform-origin: center center;
+    transition:
+        max-width 0.82s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.42s ease,
+        transform 0.82s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.section-floating-nav.is-collapsed .section-floating-links {
+    max-width: 100%;
+    opacity: 0;
+    transform: scaleX(0.18);
+    pointer-events: none;
+}
+
+.section-floating-link {
+    position: relative;
+    z-index: 4;
+    display: inline-block;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-muted);
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.11em;
+    line-height: 1;
+    transition: color 0.22s ease, transform 0.28s cubic-bezier(0.18, 1.28, 0.28, 1);
+}
+
+.section-floating-link .section-floating-link-text {
+    display: inline-block;
+    font-weight: 400;
+    transform: scale(1);
+    transform-origin: center center;
+    transition:
+        font-weight 0.22s ease,
+        transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+        letter-spacing 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.section-floating-link:hover,
+.section-floating-link:focus-visible {
+    color: var(--ink-strong);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.section-floating-link:hover .section-floating-link-text,
+.section-floating-link:focus-visible .section-floating-link-text {
+    font-weight: 520;
+    transform: scale(1.02);
+}
+
+.section-floating-link:active .section-floating-link-text {
+    transform: scale(0.96);
+}
+
+.section-floating-link.is-active {
+    color: var(--ink-strong);
+}
+
+.section-floating-link.is-active .section-floating-link-text {
+    font-weight: 520;
+}
+
+.section-floating-logo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(var(--paper-rgb) / 0.42), rgb(var(--paper-rgb) / 0.18));
+    box-shadow:
+        inset 1px 1px 0 rgb(var(--paper-rgb) / 0.7),
+        inset -1px -1px 0 rgb(var(--paper-rgb) / 0.38);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.82);
+    transition:
+        opacity 0.38s ease,
+        transform 0.82s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.section-floating-nav.is-collapsed .section-floating-logo {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.section-floating-logo-image {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.section-return {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 84px;
+    border: 1px solid rgb(var(--paper-rgb) / 0.44);
+    border-radius: 14px;
+    background:
+        linear-gradient(180deg, rgba(72, 66, 62, 0.34), rgba(40, 36, 34, 0.2)),
+        rgb(var(--ink-rgb) / 0.14);
+    color: var(--paper);
+    backdrop-filter: blur(10px) saturate(135%);
+    -webkit-backdrop-filter: blur(10px) saturate(135%);
+    box-shadow:
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.18),
+        0 10px 22px rgb(var(--shadow-rgb) / 0.1);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.35s ease, visibility 0.35s ease, background 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.section-return.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.section-return:hover,
+.section-return:focus-visible {
+    background:
+        linear-gradient(180deg, rgba(92, 84, 78, 0.46), rgba(54, 48, 45, 0.3)),
+        rgba(36, 31, 29, 0.22);
+    border-color: rgb(var(--paper-rgb) / 0.52);
+    color: #f8f6f2;
+    box-shadow:
+        inset 0 1px 0 rgb(var(--paper-rgb) / 0.24),
+        0 12px 26px rgb(var(--shadow-rgb) / 0.13);
+    outline: none;
+}
+
+.section-return-arrow {
+    display: inline-block;
+    font-family: "Helvetica Neue", "SF Pro Display", Arial, sans-serif;
+    font-size: 1.16rem;
+    font-weight: 300;
+    line-height: 1;
+    transform: scaleX(0.8);
+}
+
+@media (max-width: 768px) {
+    .section-floating-nav {
+        top: 16px;
+        width: calc(100% - 24px);
+        gap: 4px;
+        padding: 5px;
+    }
+
+    .section-floating-nav.is-collapsed {
+        width: 58px;
+        padding-inline: 5px;
+    }
+
+    .section-floating-links {
+        gap: 4px;
+    }
+
+    .section-floating-link {
+        padding: 7px 6px;
+        font-size: 8px;
+        letter-spacing: 0.06em;
+    }
+
+    .section-floating-logo {
+        width: 38px;
+        height: 38px;
+    }
+
+    .section-floating-nav.is-collapsed .section-floating-logo {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .section-floating-logo-image {
+        width: 24px;
+        height: 24px;
+    }
+
+    .section-return {
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 74px;
+    }
+}
+
+/* The distortion is the expensive part and the least essential; drop it, and the
+   lens sheen with it, when motion is unwelcome. */
+@media (prefers-reduced-motion: reduce) {
+    .section-floating-refraction {
+        display: none;
+    }
+
+    .section-floating-highlight::after {
+        display: none;
+    }
+}

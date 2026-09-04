@@ -1,0 +1,114 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* The site's two inks, and the shadow they cast. Everything that used to be
+       written #ffffff / #171514 / rgba(0,0,0,…) goes through these — there were
+       164 colour literals across the nine stylesheets and no token for any of
+       them, so a change of ink meant a search across every file.
+       The -rgb triples exist so a translucent variant can reuse the same base:
+       `rgb(var(--ink-rgb) / 0.08)` rather than a fourth spelling of the colour. */
+    --paper-rgb: 255 255 255;
+    --ink-rgb: 23 21 20;
+    --shadow-rgb: 0 0 0;
+    --paper: rgb(var(--paper-rgb));
+    --ink: rgb(var(--ink-rgb));
+    --shadow: rgb(var(--shadow-rgb));
+    /* Three tiers of ink, not one. They were eleven hex literals that looked
+       identical in a swatch but are not: --ink-strong sits 2.4% darker than
+       --ink and --ink-soft 3.1% lighter, which is visible on a headline. The
+       spellings within each tier differed by under 1.2% and were pure drift. */
+    --ink-strong: #11100f;
+    --ink-soft: #1f1d1b;
+    --ink-muted: #8a867f;
+    --project-shell-padding: 28px;
+    /* The run-out below the last row of cards. The drawings section follows
+       immediately — its --section-overlap is never written, so nothing slides
+       over this — and at the old 40px the grid ended almost flush against it. */
+    --project-shell-end-space: 200px;
+    --project-card-scale: 0.985;
+    --project-column-count: 3;
+    --project-edge-inset: calc((100% / var(--project-column-count)) * ((1 - var(--project-card-scale)) / 2));
+    /* Outer breathing room and inter-card spacing for the project section. The
+       intro, the grid and the list view all key off --project-grid-inset, so the
+       heading, the filter chips and the leftmost card share one left edge. */
+    --project-grid-inset: clamp(10px, 2.6vw, 48px);
+    --project-grid-gutter: 22px;
+    --stack-section-overlap: 34vh;
+    --contact-section-overlap: 18vh;
+    --filter-panel-open-duration: 0.42s;
+    --filter-panel-close-duration: 0.3s;
+    --filter-option-pop-duration: 0.74s;
+    --filter-option-fade-duration: 0.42s;
+    --filter-option-open-stagger: 0.09s;
+    --filter-option-close-stagger: 0.07s;
+}
+
+html {
+    scroll-behavior: auto;
+    scrollbar-gutter: stable;
+}
+
+html.is-locked,
+body.is-locked {
+    overflow: hidden;
+    height: 100%;
+}
+
+/* Mirrored by the <noscript> override in index.html, which has to name the same
+   sections to undo this: one added here and not there stays dimmed, blurred and
+   unreachable for a visitor with scripting off. */
+body.is-locked .project-showcase,
+body.is-locked .drawings-section,
+body.is-locked .about-section,
+body.is-locked .contact-section,
+body.is-locked .anchor-placeholder {
+    opacity: 0.18;
+    filter: blur(3px);
+    pointer-events: none;
+    user-select: none;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button,
+a {
+    touch-action: manipulation;
+}
+
+@media (max-width: 1080px) {
+    :root {
+        --project-column-count: 2;
+        --project-grid-inset: clamp(8px, 2vw, 28px);
+        --project-grid-gutter: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --project-shell-padding: 16px;
+        --project-shell-end-space: 120px;
+        --project-column-count: 1;
+        --project-grid-inset: 2px;
+        --project-grid-gutter: 14px;
+        --stack-section-overlap: 18vh;
+        --contact-section-overlap: 10vh;
+    }
+}
