@@ -93,25 +93,51 @@ function markProgressiveImageLoaded(image) {
 function reserveProgressiveImageBox(image, previewSrc) {
     const probe = new Image();
 
-    // Pinned rather than left to the loaded image's own ratio: the preview's
-    // short side is rounded to a whole pixel, so the two differ by up to a
-    // percent, and letting the intrinsic value take over on load would put back
-    // a small version of the jump this exists to remove. `contain` absorbs the
-    // difference as a hairline of the figure's white.
-    function applyRatio() {
-        if (probe.naturalWidth && probe.naturalHeight) {
-            image.style.aspectRatio = probe.naturalWidth + " / " + probe.naturalHeight;
+    // The preview's ratio is only an estimate, and a coarse one: sips scales the
+    // long side to 48px and rounds the short side to a whole pixel, so a wide
+    // image can come back up to 3% off. Held past load, that error is what
+    // `contain` turns into a band of the figure's white down two edges — up to
+    // 13px a side, on nearly half the images, and conspicuous precisely because
+    // the image above it happened to round flush. So the estimate is only ever a
+    // placeholder: the moment the real file reports its own size, that is the
+    // truth and it replaces the guess. The correction is at most 3% of one
+    // figure's height, against the full-height snap this reservation exists to
+    // remove.
+    function applyRatio(width, height) {
+        if (width && height) {
+            image.style.aspectRatio = width + " / " + height;
         }
     }
 
-    probe.addEventListener("load", applyRatio, { once: true });
+    function applyPreviewRatio() {
+        // A warm cache can hand the full image over before the probe resolves;
+        // never trade its exact ratio back for the estimate.
+        if (image.naturalWidth > 0) {
+            return;
+        }
+
+        applyRatio(probe.naturalWidth, probe.naturalHeight);
+    }
+
+    function applyIntrinsicRatio() {
+        applyRatio(image.naturalWidth, image.naturalHeight);
+    }
+
+    if (image.complete && image.naturalWidth > 0) {
+        applyIntrinsicRatio();
+        return;
+    }
+
+    image.addEventListener("load", applyIntrinsicRatio, { once: true });
+
+    probe.addEventListener("load", applyPreviewRatio, { once: true });
     probe.decoding = "async";
     probe.src = previewSrc;
 
     // Reopening a project, or any two projects sharing a preview, hits the cache:
     // take the size in this frame rather than collapsing for one and expanding.
     if (probe.complete) {
-        applyRatio();
+        applyPreviewRatio();
     }
 }
 

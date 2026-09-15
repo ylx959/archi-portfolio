@@ -439,6 +439,7 @@
 .project-detail-shell.is-gallery-mode .project-detail-gallery-mode {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 18px;
     min-width: 0;
     min-height: 0;

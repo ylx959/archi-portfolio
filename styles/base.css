@@ -112,3 +112,10 @@ a {
         --contact-section-overlap: 10vh;
     }
 }
+
+/* selection*/
+
+::selection{
+    background:rgb(208, 208, 208);
+    color:white;
+}
