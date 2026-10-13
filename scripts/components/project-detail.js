@@ -568,6 +568,15 @@ export function initProjectDetail() {
         projectDetailClose.addEventListener("click", closeProjectDetail);
     }
 
+    // The backdrop is everything around the shell, so a click anywhere outside
+    // the panel closes it too. A drag that starts inside the panel and ends out
+    // here does not count: its click lands on the overlay, their common ancestor.
+    const projectDetailBackdrop = projectDetailOverlay ? projectDetailOverlay.querySelector("[data-detail-close]") : null;
+
+    if (projectDetailBackdrop) {
+        projectDetailBackdrop.addEventListener("click", closeProjectDetail);
+    }
+
     if (projectDetailGalleryToggle) {
         projectDetailGalleryToggle.addEventListener("click", function () {
             if (isMobileHeroMode()) {

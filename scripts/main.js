@@ -6,8 +6,8 @@ import { initAbout } from "./components/about.js";
 import { initContact } from "./components/contact.js";
 import { initCursorFollower } from "./components/cursor-follower.js";
 import { initDrawings } from "./components/drawings.js";
-import { initDrawingsSignature } from "./components/drawings-signature.js";
 import { initDrawingsDetail } from "./components/drawings-detail.js";
+import { initDrawingsTitle } from "./components/drawings-title.js";
 import { initFloatingNav } from "./components/floating-nav.js";
 import { initHero } from "./components/hero.js";
 import { initHeroAmpersand } from "./components/hero-ampersand.js";
@@ -48,7 +48,7 @@ function start() {
     initProjectGrid();
     initProjectDetail();
     initDrawings();
-    initDrawingsSignature();
+    initDrawingsTitle();
     initDrawingsDetail();
     initAbout();
     initContact();

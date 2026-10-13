@@ -103,12 +103,10 @@ function getCardShadowStrength(rects, index, stickyStep) {
 }
 
 // Where the nav should put the visitor when they press Drawings. The default —
-// the section's own top — arrives before anything has happened: the heading is
-// blank, because it writes itself across the lead-in, and the first drawing is
-// still a screen below. The landing is therefore moved down to the first card's
-// resting place, which is also where the signature finishes its last stroke, so
-// the jump flies through the writing and stops on a finished heading with a
-// drawing under it.
+// the section's own top — arrives before anything has happened: the first
+// drawing is still a screen below, across the lead-in. The landing is therefore
+// moved down to the first card's resting place, so the jump stops on the
+// heading with a drawing under it.
 //
 // `--section-scroll-offset` is the hook core/scroll.js already reads, so this is
 // the section stating its own landing rather than the scroller learning about

@@ -60,13 +60,8 @@ function updateSectionStackMotion() {
         section.style.setProperty("--section-separate", String(progress));
     });
 
-    // `.drawings-section.is-active` drives the heading reveal and nothing else.
-    // It used to wait until the sticky heading had pinned, because a bare fade
-    // playing while the heading was still travelling up the page looked like a
-    // mistake. The heading writes itself now, and an unwritten signature draws
-    // nothing at all — so it can be made visible the moment the section enters
-    // and the writing, not the fade, is what the eye sees arrive. That earlier
-    // reveal is what gives drawings-signature.js the runway to write across.
+    // `.drawings-section.is-active` drives the heading's fade-in and nothing
+    // else: it turns on the moment the section enters the viewport.
     if (drawingsSection) {
         drawingsSection.classList.toggle("is-active", isSectionInViewport(drawingsSection));
     }

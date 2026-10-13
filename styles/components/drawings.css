@@ -37,7 +37,8 @@
     text-align: right;
     transform: none;
     opacity: 0;
-    transition: opacity 0.32s ease;
+    /* The heading's entrance: a slow fade as the section comes in, nothing else. */
+    transition: opacity 1.1s ease;
     pointer-events: none;
 }
 
@@ -46,54 +47,40 @@
     pointer-events: auto;
 }
 
-/* The heading is written, not typed: drawings-signature.js replaces the text
-   below with one SVG per line and reveals each through a masked stroke. The
-   font-size here is still what drives it — the SVGs are sized in em — so the
-   two sizings cannot drift apart. Until the module runs, the plain text is what
-   shows, which is also what a visitor without JavaScript keeps. */
+/* Arrives with the fade on .drawings-hero, then swells under the pointer:
+   drawings-title.js splits it into .drawings-title-char spans and drives each
+   one's weight and width. That needs a width axis, which is why this heading
+   alone is set in Roboto Flex. */
 .drawings-title {
-    font-family: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+    font-family: "Roboto Flex", "Inter", Arial, sans-serif;
     max-width: none;
     margin-bottom: 0;
     color: var(--ink-strong);
     font-size: clamp(2.9rem, 5.8vw, 5.45rem);
     line-height: 0.92;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    --char-wght: 400;
+    font-weight: 400;
+    letter-spacing: -0.02em;
     text-transform: none;
 }
 
-/* Only reached when the module has not run: it keeps the two-part heading
-   readable in plain text. */
+/* The subline sits under the statement as a quieter second voice. */
 .drawings-title-subline {
-    font-size: 0.52em;
-}
-
-.drawings-signature-line {
     display: block;
-    margin-left: auto;
-    overflow: visible;
+    margin-top: 0.18em;
+    font-size: 0.42em;
+    letter-spacing: 0;
 }
 
-/* The subline is the signature under the statement, so it is smaller and sits
-   slightly under the line above it. */
-.drawings-signature-line-sub {
-    margin-top: 0.1em;
-    font-size: 0.52em;
-}
-
-.drawings-signature-text {
-    fill: var(--ink-strong);
-    font-family: inherit;
-    font-weight: inherit;
-}
-
-/* The offset is written by JS on every frame of the scrub; the dasharray is set
-   once from the measured path. Nothing here may transition — a transition would
-   fight the scrub for control of the same value. */
-.drawings-signature-stroke {
+/* --char-wght / --char-wdth are written per character on every frame of the
+   swell, so nothing here may transition. The resting weight is the variable's
+   inherited default, which is also what drawings-title.js reads as the base. */
+.drawings-title-char {
+    font-weight: var(--char-wght);
+    font-variation-settings: "wdth" var(--char-wdth, 100);
     transition: none;
 }
+
 
 .drawings-carousel {
     grid-column: 1;
@@ -114,11 +101,8 @@
        kept in step by hand on both sides. */
     --drawings-stack-top: 148px;
     --drawings-stack-step: 14px;
-    /* The top padding is the lead-in, and it is the signature's runway: the
-       heading writes itself across this stretch and the first card arrives on
-       the last stroke. It is longer than the heading alone needs because a hand
-       writing three lines needs the distance — see the scrub in
-       drawings-signature.js, which ends exactly where the first card parks. */
+    /* The top padding is the lead-in: the heading is in place, faded in, for a
+       stretch of scroll before the first card arrives under it. */
     padding: 70vh 0 56vh;
 }
 
@@ -267,11 +251,6 @@
 
     .drawings-title {
         font-size: 2.6rem;
-    }
-
-    /* Left-aligned here, so the lines must not be pushed to the right edge. */
-    .drawings-signature-line {
-        margin-left: 0;
     }
 
     /* The cards stack here as well, just tighter: a phone parks them higher up
