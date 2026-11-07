@@ -13,26 +13,12 @@ function setupCursorFollower() {
     body.appendChild(cursorFollower);
 
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const interactiveSelector = [
-        "a[href]",
-        "button:not([disabled])",
-        "input:not([disabled])",
-        "textarea:not([disabled])",
-        "select:not([disabled])",
-        "summary",
-        "[role='button']",
-        "[tabindex]:not([tabindex='-1'])",
-        "[data-detail-close]",
-        "[data-drawings-detail-close]",
-        ".project-card",
-        ".drawings-card",
-        ".about-frame-link"
-    ].join(", ");
+    // The cursor stays small unless it is over a photograph or over text. Being
+    // clickable is not a reason to grow: that rule is what opened the lens over
+    // cards' blank edges, buttons and the overlay mask.
     const mediaSelector = [
         "img",
         "picture",
-        "svg",
-        "canvas",
         ".hero-visual",
         ".hero-main-image",
         ".project-image",
@@ -48,6 +34,8 @@ function setupCursorFollower() {
         "li",
         "span",
         "label",
+        "a",
+        "button",
         ".subtitle",
         ".description-copy",
         ".nav-link",
@@ -66,6 +54,7 @@ function setupCursorFollower() {
         ".drawings-title",
         ".drawings-title-subline"
     ].join(", ");
+    const overlayMaskSelector = ".project-detail-backdrop, .drawings-detail-backdrop";
     let idleTimer = null;
     let isEnabled = false;
     const imageMagnifierScale = 2.25;
@@ -384,12 +373,6 @@ function setupCursorFollower() {
             return mediaElement;
         }
 
-        const interactiveElement = target.closest(interactiveSelector);
-
-        if (interactiveElement && isPointOverElementBox(x, y, interactiveElement)) {
-            return interactiveElement;
-        }
-
         const textElement = target.closest(textSelector);
 
         if (textElement && isPointOverText(x, y, textElement)) {
@@ -413,6 +396,12 @@ function setupCursorFollower() {
             : [document.elementFromPoint(x, y)];
 
         for (let index = 0; index < targets.length; index += 1) {
+            // elementsFromPoint keeps going through the mask: everything after
+            // it is the page underneath, which must not be magnified through it.
+            if (targets[index].matches(overlayMaskSelector)) {
+                return null;
+            }
+
             const magnifiableElement = getMagnifiableElementFromTarget(x, y, targets[index]);
 
             if (magnifiableElement) {
@@ -437,6 +426,15 @@ function setupCursorFollower() {
 
     function handlePointerMove(event) {
         if (!isEnabled || event.pointerType === "touch") {
+            return;
+        }
+
+        // With an overlay open the follower exists only inside the panel. Over the
+        // mask it is gone and the native cursor, which is never hidden, is all
+        // that shows. Clearing hasMoved makes it land on the pointer on the way
+        // back in rather than easing over from where it left.
+        if (event.target instanceof Element && event.target.matches(overlayMaskSelector)) {
+            hideCursorFollower();
             return;
         }
 

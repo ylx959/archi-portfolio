@@ -238,6 +238,16 @@
     animation: none;
 }
 
+/* Past the expansion the hint is at opacity 0, and an infinite animation does
+   not stop for that or for being scrolled away: it kept a compositor animation
+   alive for the rest of the visit. Safari re-samples every backdrop-filter on
+   the page while one runs, which made the project overlay's blurred backdrop
+   flicker. The morph-complete rule below outranks this and restarts the pulse
+   for the one later stage that shows the hint. */
+.hero.is-expanded .hero-expand-hint {
+    animation: none;
+}
+
 /* The "Hello / <name>" stage is the second place the page stops and waits for a
    scroll it never asked for out loud, so the hint comes back for it. It is the
    same element and the same pulse — a second hint would be a second thing to

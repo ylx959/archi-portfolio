@@ -21,6 +21,21 @@
     opacity: 1;
 }
 
+/* Not just opacity 0: a transparent element keeps its backdrop-filter layers, and
+   Safari flickers the project overlay's full-screen blur while any other backdrop
+   layer is alive above it. */
+.cursor-follower:not(.is-active) {
+    visibility: hidden;
+}
+
+/* For the same reason the follower carries no glass of its own while an overlay
+   is open. It is only shown over the panel, where there is little to blur. */
+body.is-project-detail-open .cursor-follower .cursor-follower-dot,
+body.is-project-detail-open .cursor-follower .cursor-follower-hint {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 .cursor-follower-dot {
     position: relative;
     display: block;

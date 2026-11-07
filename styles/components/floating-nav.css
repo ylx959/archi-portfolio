@@ -52,6 +52,15 @@
         box-shadow 0.35s ease;
 }
 
+/* Under an overlay the nav's glass is one more backdrop layer nested inside the
+   overlay's backdrop-filter, which Safari renders unstably. It goes once the
+   overlay's 0.72s fade has covered it, so the change is never seen. */
+body.is-project-detail-open .section-floating-nav {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: backdrop-filter 0s linear 0.72s, -webkit-backdrop-filter 0s linear 0.72s;
+}
+
 /* The one departure from the shared surface: the nav sits over the work, so it
    is the same glass at about two thirds of the strength. */
 .section-floating-nav {

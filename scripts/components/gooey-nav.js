@@ -162,9 +162,16 @@ function buildPipeline(gl) {
     return { program: program, uniforms: uniforms, buffer: buffer, position: gl.getAttribLocation(program, "aPosition") };
 }
 
-// The pill takes the page's paper, read off the token rather than restated.
+// The pill takes the page's paper, read off the token rather than restated. It
+// is read at draw time because the module can run before the stylesheet applies:
+// the token is then empty, and reading it once at init left one channel for
+// uniform3f, which drew the pill pure red for the rest of the visit.
 function readPillColor() {
     const triple = window.getComputedStyle(document.documentElement).getPropertyValue("--paper-rgb").trim().split(/\s+/);
+
+    if (triple.length !== 3) {
+        return [1, 1, 1];
+    }
 
     return triple.map(function (channel) {
         return (parseFloat(channel) || 255) / 255;
@@ -203,7 +210,6 @@ export function createGooeyNav(stage, list) {
     const isReduced = reducedMotionQuery.matches;
     const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
     const pipeline = gl ? buildPipeline(gl) : null;
-    const pillColor = readPillColor();
 
     stage.classList.toggle("has-gooey-canvas", !!pipeline);
 
@@ -503,6 +509,7 @@ export function createGooeyNav(stage, list) {
         gl.uniform2fv(uniforms.uTails, tailData);
         gl.uniform1i(uniforms.uCount, count);
         gl.uniform1f(uniforms.uSmooth, smooth);
+        const pillColor = readPillColor();
         gl.uniform3f(uniforms.uPill, pillColor[0], pillColor[1], pillColor[2]);
         gl.uniform4f(uniforms.uHoverColor, 1, 1, 1, settings.hoverAlpha * hover.alpha);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

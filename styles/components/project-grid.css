@@ -523,10 +523,14 @@
     padding: 10px 12px;
     border-radius: 10px;
     background: rgb(var(--paper-rgb) / 0.45);
-    backdrop-filter: blur(10px);
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    /* The blur exists only while the caption shows. Declared here, every card
+       held a live backdrop layer at opacity 0, all of them nested under the
+       project overlay's own backdrop-filter, which Safari renders unstably. The
+       delay keeps it through the fade-out. Not `visibility: hidden`: the caption
+       is the accessible name of the card's role="button". */
+    transition: opacity 0.5s ease, transform 0.5s ease, backdrop-filter 0s linear 0.5s;
 }
 
 .project-list-info {
@@ -557,6 +561,8 @@
 .project-card:hover .project-caption {
     opacity: 1;
     transform: translateY(0);
+    backdrop-filter: blur(10px);
+    transition-delay: 0s;
 }
 
 .project-grid.is-list-view {
