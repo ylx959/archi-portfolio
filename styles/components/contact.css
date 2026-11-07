@@ -140,11 +140,12 @@
 
 .contact-submit-text {
     display: inline-block;
+    transition: transform 0.14s ease;
 }
 
 .contact-submit:hover,
 .contact-submit:focus-visible {
-    background: rgba(54, 54, 58, 0.64);
+    background: rgba(38, 38, 40, 0.4);
     color: var(--paper);
     box-shadow:
         inset 0 1px 0 rgb(var(--paper-rgb) / 0.2),
@@ -152,9 +153,9 @@
     outline: none;
 }
 
-.contact-submit:hover .contact-submit-text,
-.contact-submit:focus-visible .contact-submit-text {
-    animation: contact-submit-scroll 0.56s cubic-bezier(0.32, 0.9, 0.34, 1) 1;
+/* A transform rather than font-size, so pressing does not resize the button. */
+.contact-submit:active .contact-submit-text {
+    transform: scale(0.8);
 }
 
 .contact-footer {
@@ -200,28 +201,6 @@
 .contact-socials a:focus-visible {
     color: var(--ink-strong);
     outline: none;
-}
-
-@keyframes contact-submit-scroll {
-    0% {
-        transform: translateY(0);
-        opacity: 1;
-    }
-
-    35% {
-        transform: translateY(-10px);
-        opacity: 0;
-    }
-
-    36% {
-        transform: translateY(10px);
-        opacity: 0;
-    }
-
-    100% {
-        transform: translateY(0);
-        opacity: 1;
-    }
 }
 
 @media (max-width: 1080px) {

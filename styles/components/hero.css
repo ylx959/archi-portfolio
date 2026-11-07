@@ -18,6 +18,13 @@
     padding: 12px;
     overflow: clip;
     background: var(--paper);
+    /* Nothing here is for selecting. Set on the hero rather than the card because
+       a drag that starts in the padding would otherwise still paint the headline
+       lying over it. .input takes selection back. The image's own drag is off
+       through draggable="false" in the markup and -webkit-user-drag below. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
     /* Entering returns the media to the size it dropped in at, so the comma
        scrub starts from the same card the visitor first saw. */
     --hero-card-width: var(--hero-media-width);
@@ -83,6 +90,7 @@
     height: 100%;
     object-fit: cover;
     object-position: center 76%;
+    -webkit-user-drag: none;
     /* The frame opens while the picture pulls back: at rest the image is zoomed
        into one spot, and it scales down to its full self as the card expands. */
     transform: scale(calc(var(--hero-media-zoom) - ((var(--hero-media-zoom) - 1) * var(--hero-expand-progress))));
@@ -708,6 +716,10 @@
     border: none;
     outline: none;
     caret-color: var(--ink-strong);
+    /* user-select: none on .hero reaches this field, and Safari then refuses
+       typing in it altogether — the site could not be entered. */
+    -webkit-user-select: text;
+    user-select: text;
     font-size: var(--hero-form-field-size);
     width: var(--hero-form-field-width);
     transition: box-shadow 0.25s ease, opacity 0.25s ease;

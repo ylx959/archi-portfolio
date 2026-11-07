@@ -409,6 +409,7 @@
 .project-grid.is-entering .project-card {
     animation:
         project-card-rise 1.6s cubic-bezier(0.16, 1, 0.3, 1) both,
+        /* project-grid.js holds this length as projectCardEntranceDuration */
         project-card-fade 2.6s ease both;
 }
 

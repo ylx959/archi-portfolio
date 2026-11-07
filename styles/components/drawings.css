@@ -47,7 +47,7 @@
     pointer-events: auto;
 }
 
-/* Arrives with the fade on .drawings-hero, then swells under the pointer:
+/* Arrives with the fade on .drawings-hero, then is pressed by the pointer:
    drawings-title.js splits it into .drawings-title-char spans and drives each
    one's weight and width. That needs a width axis, which is why this heading
    alone is set in Roboto Flex. */
@@ -56,12 +56,20 @@
     max-width: none;
     margin-bottom: 0;
     color: var(--ink-strong);
-    font-size: clamp(2.9rem, 5.8vw, 5.45rem);
+    /* Far larger than the words would need at a normal width, because at rest
+       they sit near the condensed end of the axis. */
+    font-size: clamp(5rem, 10vw, 9.6rem);
     line-height: 0.92;
     --char-wght: 400;
     font-weight: 400;
     letter-spacing: -0.02em;
     text-transform: none;
+    /* The widths move every frame: a line that wrapped would jump a whole row. */
+    white-space: nowrap;
+    /* A tap is a press here, so a double one must not select the letters. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* The subline sits under the statement as a quieter second voice. */
@@ -72,9 +80,8 @@
     letter-spacing: 0;
 }
 
-/* --char-wght / --char-wdth are written per character on every frame of the
-   swell, so nothing here may transition. The resting weight is the variable's
-   inherited default, which is also what drawings-title.js reads as the base. */
+/* --char-wght / --char-wdth are written per character on every
+   frame of the pressure, so nothing here may transition. */
 .drawings-title-char {
     font-weight: var(--char-wght);
     font-variation-settings: "wdth" var(--char-wdth, 100);
@@ -250,7 +257,7 @@
     }
 
     .drawings-title {
-        font-size: 2.6rem;
+        font-size: 4.6rem;
     }
 
     /* The cards stack here as well, just tighter: a phone parks them higher up

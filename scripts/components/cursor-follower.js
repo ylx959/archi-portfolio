@@ -35,8 +35,6 @@ function setupCursorFollower() {
         "canvas",
         ".hero-visual",
         ".hero-main-image",
-        ".section-floating-logo",
-        ".section-floating-logo-image",
         ".project-image",
         ".drawings-image",
         ".about-card-face"

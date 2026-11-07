@@ -130,6 +130,9 @@ function setupProjectCardImage(card, imageSrc) {
     probe.addEventListener("error", settle, { once: true });
 }
 
+// The length of project-card-fade, the longer of the two entrance animations.
+const projectCardEntranceDuration = 2.6;
+
 // The hero hands the page to #projects with a scroll the visitor did not make,
 // and until now the grid was simply already there when it arrived. The cards rise
 // into place instead — the whole grid at once, with no order to it.
@@ -139,6 +142,15 @@ function setupProjectCardImage(card, imageSrc) {
 // therefore finish while the visitor is still on the first one, and reaching them
 // costs nothing — which is the point, the grid is one surface arriving, not nine
 // cards taking turns.
+// The entrance has to leave no trace once it has played. A CSS animation restarts
+// whenever it is applied again, and this one would be: `is-switching-*` replaces
+// `animation` on the cards for the view toggle, so taking that class off handed
+// the cards back to the entrance, and they blinked out and ran it a second time.
+// A filter does the same to any card it hides and shows again.
+function finishProjectCardReveal() {
+    projectGrid.classList.remove("is-entrance-pending", "is-entering");
+}
+
 function initProjectCardReveal() {
     // Reduced motion gets the finished grid: no pending class is ever added, so
     // there is no hidden state depending on a trigger to clear it.
@@ -156,6 +168,7 @@ function initProjectCardReveal() {
         once: true,
         onEnter: function () {
             projectGrid.classList.add("is-entering");
+            gsap.delayedCall(projectCardEntranceDuration, finishProjectCardReveal);
         }
     });
 }
@@ -437,6 +450,8 @@ export function initProjectGrid() {
 
     if (viewToggle && projectGrid) {
         viewToggle.addEventListener("click", function () {
+            finishProjectCardReveal();
+
             const isListView = projectGrid.classList.toggle("is-list-view");
             projectGrid.classList.remove("is-switching-to-grid", "is-switching-to-list");
             void projectGrid.offsetWidth;
