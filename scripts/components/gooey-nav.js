@@ -17,6 +17,7 @@ const maxPills = 4;
 const canvasMargin = 72;
 
 // The component's defaults, less its drop shadow: the pill sits flat on the glass.
+// The hover pill is stronger than its 0.08, which vanishes on glass this light.
 const settings = {
     animationTime: 600,
     particleCount: 15,
@@ -24,7 +25,7 @@ const settings = {
     spread: 56,
     gooeyness: 0.5,
     wobble: 0.5,
-    hoverAlpha: 0.08
+    hoverAlpha: 0.24
 };
 
 const vertexSource = `#version 300 es

@@ -15,7 +15,6 @@
         0 10px 22px rgb(var(--shadow-rgb) / 0.1);
 }
 
-.section-floating-nav:hover,
 .section-return:hover,
 .section-return:focus-visible {
     background:
@@ -59,12 +58,6 @@
     background:
         linear-gradient(180deg, rgba(72, 66, 62, 0.22), rgba(40, 36, 34, 0.13)),
         rgb(var(--ink-rgb) / 0.09);
-}
-
-.section-floating-nav:hover {
-    background:
-        linear-gradient(180deg, rgba(92, 84, 78, 0.3), rgba(54, 48, 45, 0.2)),
-        rgba(36, 31, 29, 0.14);
 }
 
 .section-floating-nav.is-visible {
